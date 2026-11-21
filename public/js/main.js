@@ -234,6 +234,10 @@
               <p style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #fff;">${tempoLivre} min</p>
             </div>
             <div>
+              <p style="margin: 0; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.6);">Distância da rota</p>
+              <p style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #fff;">${d.distanciaKm || 0} km</p>
+            </div>
+            <div>
               <p style="margin: 0; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.6);">Chegada prevista</p>
               <p style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #fff;">${chegada.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</p>
             </div>

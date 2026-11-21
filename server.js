@@ -228,10 +228,115 @@ function classificarTempoViagem(minutos) {
 }
 
 /**
- * Consulta o TomTom Traffic Flow para obter velocidade atual vs livre
- * Retorna: { ok, tempoLivreMin, tempoAtualMin, classificacao, segmento..., erro? }
+ * Consulta o TomTom Routing API para calcular a rota completa com trânsito em tempo real.
+ * Funciona igual ao Google Maps: considera cada segmento da estrada com trânsito atual.
+ * Retorna: { ok, tempoLivreMin, tempoAtualMin, classificacao, distanciaKm, segmento..., erro? }
  */
 async function consultarTransito() {
+  if (!CFG.tomtomKey) {
+    return { ok: false, erro: "TOMTOM_API_KEY não configurada no .env" };
+  }
+
+  const origem = `${CFG.transitoOrigemLat},${CFG.transitoOrigemLon}`;
+  const destino = `${CFG.transitoDestinoLat},${CFG.transitoDestinoLon}`;
+
+  // traffic=true => considera trânsito em tempo real (igual ao Google Maps)
+  const url = "https://api.tomtom.com/routing/1/calculateRoute/" +
+    origem + "/" + destino + "/json" +
+    "?key=" + CFG.tomtomKey +
+    "&travelMode=car" +
+    "&traffic=true" +
+    "&language=pt-BR" +
+    "&vehicleMaxSpeed=120";
+
+  try {
+    const r = await buscar(url, { headers: { "User-Agent": "site-universitarios-divisa-alegre" } });
+    if (!r.ok) {
+      console.warn("[trânsito] TomTom Routing HTTP " + r.status);
+      // Fallback: tenta o método antigo (Traffic Flow) se a Routing falhar
+      return await consultarTransitoFallback();
+    }
+
+    const d = await r.json();
+    const route = d.routes && d.routes[0];
+    if (!route) {
+      console.warn("[trânsito] TomTom sem rotas retornadas");
+      return await consultarTransitoFallback();
+    }
+
+    const summary = route.summary || {};
+    const distanciaMetros = summary.lengthInMeters || 0;
+    const tempoComTransitoSeg = summary.travelTimeInSeconds || 0;      // com trânsito
+    const tempoSemTransitoSeg = summary.noTrafficTravelTimeInSeconds || 0; // sem trânsito
+
+    const distanciaKm = Math.round((distanciaMetros / 1000) * 10) / 10;
+    const tempoAtualMin = Math.round(tempoComTransitoSeg / 60);
+    const tempoLivreMin = Math.round(tempoSemTransitoSeg / 60);
+
+    // Se a API não retornou noTrafficTravelTimeInSeconds, calcula estimativa
+    const tempoLivreFinal = tempoLivreMin > 0 ? tempoLivreMin : Math.round((distanciaKm / 80) * 60);
+
+    const classificacao = classificarTempoViagem(tempoAtualMin);
+
+    // Multiplicador para exibição (quanto o trânsito está pior que o livre)
+    const multiplicador = tempoLivreFinal > 0 ? Number((tempoAtualMin / tempoLivreFinal).toFixed(2)) : 1;
+
+    // Busca obras e acidentes na rota (não falha o trânsito se der erro)
+    let incidentes = [];
+    try { incidentes = await consultarIncidentes(); } catch (e) { console.warn("[incidentes] Erro ao consultar:", limpar(e.message)); }
+
+    // Detalhes dos trechos da rota (para exibição de segmentos)
+    const segmentos = [];
+    const legs = route.legs || [];
+    for (const leg of legs) {
+      const points = leg.points || [];
+      for (let i = 0; i < points.length - 1; i += Math.max(1, Math.floor(points.length / 3))) {
+        const p = points[i];
+        segmentos.push({
+          ponto: p.latitude.toFixed(4) + ", " + p.longitude.toFixed(4),
+          velocidadeAtual: 0,
+          velocidadeLivre: 0,
+          multiplicador: multiplicador,
+          congestionamento: 0,
+          roadClosure: false,
+        });
+        if (segmentos.length >= 3) break;
+      }
+      if (segmentos.length >= 3) break;
+    }
+
+    // Se não conseguiu montar segmentos da rota, usa fallback com pontos fixos
+    if (segmentos.length === 0) {
+      segmentos.push(
+        { ponto: "Divisa Alegre", velocidadeAtual: 0, velocidadeLivre: 0, multiplicador: multiplicador, congestionamento: 0, roadClosure: false },
+        { ponto: "BR-116 (trecho médio)", velocidadeAtual: 0, velocidadeLivre: 0, multiplicador: multiplicador, congestionamento: 0, roadClosure: false },
+        { ponto: "Vitória da Conquista", velocidadeAtual: 0, velocidadeLivre: 0, multiplicador: multiplicador, congestionamento: 0, roadClosure: false }
+      );
+    }
+
+    return {
+      ok: true,
+      fonte: "TomTom Routing API (trânsito em tempo real)",
+      tempoLivreMin: tempoLivreFinal,
+      tempoAtualMin,
+      multiplicador,
+      classificacao, // "bom" | "lento" | "ruim"
+      distanciaKm,
+      segmentos,
+      incidentes,
+      verificadoEm: new Date().toISOString(),
+    };
+
+  } catch (e) {
+    console.warn("[trânsito] Erro no Routing API:", limpar(e.message));
+    return await consultarTransitoFallback();
+  }
+}
+
+/**
+ * Fallback: método antigo com Traffic Flow (pontos fixos) se a Routing API falhar
+ */
+async function consultarTransitoFallback() {
   if (!CFG.tomtomKey) {
     return { ok: false, erro: "TOMTOM_API_KEY não configurada no .env" };
   }
@@ -251,7 +356,7 @@ async function consultarTransito() {
 
       const r = await buscar(url, { headers: { "User-Agent": "site-universitarios-divisa-alegre" } });
       if (!r.ok) {
-        console.warn(`[trânsito] TomTom ${ponto.nome}: HTTP ${r.status}`);
+        console.warn(`[trânsito fallback] TomTom ${ponto.nome}: HTTP ${r.status}`);
         continue;
       }
       const d = await r.json();
@@ -271,7 +376,7 @@ async function consultarTransito() {
         roadClosure: seg.roadClosure || false,
       });
     } catch (e) {
-      console.warn(`[trânsito] Erro em ${ponto.nome}:`, limpar(e.message));
+      console.warn(`[trânsito fallback] Erro em ${ponto.nome}:`, limpar(e.message));
     }
   }
 
@@ -281,27 +386,26 @@ async function consultarTransito() {
 
   const multiplicadorMedio = resultados.reduce((s, r) => s + r.multiplicador, 0) / resultados.length;
 
-  // Estima tempo livre e atual baseado na distância configurada
-  const distanciaTotalKm = CFG.transitoDistanciaKm > 0 ? CFG.transitoDistanciaKm : 150;
-  const velocidadeMediaLivre = CFG.transitoVelocidadeLivre > 0 ? CFG.transitoVelocidadeLivre : 80; // km/h média em estrada livre
+  const distanciaTotalKm = CFG.transitoDistanciaKm > 0 ? CFG.transitoDistanciaKm : 120;
+  const velocidadeMediaLivre = CFG.transitoVelocidadeLivre > 0 ? CFG.transitoVelocidadeLivre : 80;
   const tempoLivreMin = Math.round((distanciaTotalKm / velocidadeMediaLivre) * 60);
   const tempoAtualMin = Math.round(tempoLivreMin * multiplicadorMedio);
 
   const classificacao = classificarTempoViagem(tempoAtualMin);
 
-  // Busca obras e acidentes na rota (não falha o trânsito se der erro)
   let incidentes = [];
   try { incidentes = await consultarIncidentes(); } catch (e) { console.warn("[incidentes] Erro ao consultar:", limpar(e.message)); }
 
   return {
     ok: true,
-    fonte: "TomTom Traffic API",
+    fonte: "TomTom Traffic API (fallback - pontos fixos)",
     tempoLivreMin,
     tempoAtualMin,
     multiplicador: Number(multiplicadorMedio.toFixed(2)),
-    classificacao, // "bom" | "lento" | "ruim"
+    classificacao,
+    distanciaKm: distanciaTotalKm,
     segmentos: resultados,
-    incidentes, // obras e acidentes na rota
+    incidentes,
     verificadoEm: new Date().toISOString(),
   };
 }
