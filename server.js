@@ -59,7 +59,7 @@ const CFG = {
   climaCidade: process.env.CLIMA_CIDADE || "Vitória da Conquista",
   climaTz: process.env.CLIMA_TIMEZONE || "America/Bahia",
 
-  // Trânsito (Google Maps Directions API)
+  // Trânsito (Google Maps Routes API)
   googleMapsKey: process.env.GOOGLE_MAPS_API_KEY || "",
   transitoOrigemLat: Number(process.env.TRANSITO_ORIGEM_LAT || -15.7215),
   transitoOrigemLon: Number(process.env.TRANSITO_ORIGEM_LON || -41.34411),
@@ -226,7 +226,7 @@ function classificarTempoViagem(minutos) {
 }
 
 /**
- * Consulta o Google Maps Directions API para calcular a rota completa com trânsito em tempo real.
+ * Consulta o Google Maps Routes API para calcular a rota completa com trânsito em tempo real.
  * Funciona igual ao Google Maps: considera cada segmento da estrada com trânsito atual.
  * Retorna: { ok, tempoLivreMin, tempoAtualMin, classificacao, distanciaKm, segmento..., erro? }
  */
@@ -238,36 +238,43 @@ async function consultarTransito() {
   const origem = `${CFG.transitoOrigemLat},${CFG.transitoOrigemLon}`;
   const destino = `${CFG.transitoDestinoLat},${CFG.transitoDestinoLon}`;
 
-  // departureTime=now => considera trânsito em tempo real (igual ao Google Maps)
-  const url = "https://maps.googleapis.com/maps/api/directions/json" +
-    "?origin=" + encodeURIComponent(origem) +
-    "&destination=" + encodeURIComponent(destino) +
-    "&mode=driving" +
-    "&departureTime=now" +
-    "&traffic_model=best_guess" +
-    "&language=pt-BR" +
-    "&region=BR" +
-    "&key=" + CFG.googleMapsKey;
+  const body = {
+    origin: { location: { latLng: { latitude: CFG.transitoOrigemLat, longitude: CFG.transitoOrigemLon } } },
+    destination: { location: { latLng: { latitude: CFG.transitoDestinoLat, longitude: CFG.transitoDestinoLon } } },
+    travelMode: "DRIVE",
+    routingPreference: "TRAFFIC_AWARE",
+    departureTime: new Date().toISOString(),
+    languageCode: "pt-BR",
+    regionCode: "BR",
+    units: "METRIC",
+  };
 
   try {
-    const r = await buscar(url, { headers: { "User-Agent": "site-universitarios-divisa-alegre" } });
+    const r = await buscar("https://routes.googleapis.com/directions/v2:computeRoutes", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": CFG.googleMapsKey,
+        "X-Goog-FieldMask": "routes.distanceMeters,routes.duration,routes.durationInTraffic,routes.localizedValues,routes.legs,routes.travelAdvisory",
+      },
+      body: JSON.stringify(body),
+    });
+
     if (!r.ok) {
-      console.warn("[trânsito] Google Maps HTTP " + r.status);
+      console.warn("[trânsito] Routes API HTTP " + r.status);
       return await consultarTransitoFallback();
     }
 
     const d = await r.json();
-    if (d.status !== "OK" || !d.routes || d.routes.length === 0) {
-      console.warn("[trânsito] Google Maps status:", d.status, d.error_message || "");
+    if (!d.routes || d.routes.length === 0) {
+      console.warn("[trânsito] Routes API sem rotas retornadas:", d.error || "");
       return await consultarTransitoFallback();
     }
 
     const route = d.routes[0];
-    const leg = route.legs[0];
-
-    const distanciaMetros = leg.distance ? leg.distance.value : 0;
-    const tempoComTransitoSeg = leg.duration_in_traffic ? leg.duration_in_traffic.value : 0;
-    const tempoSemTransitoSeg = leg.duration ? leg.duration.value : 0;
+    const distanciaMetros = route.distanceMeters || 0;
+    const tempoComTransitoSeg = route.durationInTraffic ? parseDuration(route.durationInTraffic) : 0;
+    const tempoSemTransitoSeg = route.duration ? parseDuration(route.duration) : 0;
 
     // Detecta se o Google tem dados reais de trânsito (duração com trânsito diferente da sem trânsito)
     const temTrafegoReal = tempoComTransitoSeg > 0 && tempoSemTransitoSeg > 0 && tempoComTransitoSeg !== tempoSemTransitoSeg;
@@ -289,11 +296,11 @@ async function consultarTransito() {
 
     // Detalhes dos trechos da rota (para exibição de segmentos)
     const segmentos = [];
-    const steps = leg.steps || [];
-    for (let i = 0; i < Math.min(steps.length, 3); i++) {
-      const step = steps[i];
+    const legs = route.legs || [];
+    for (let i = 0; i < Math.min(legs.length, 3); i++) {
+      const leg = legs[i];
       segmentos.push({
-        ponto: step.start_location ? step.start_location.lat.toFixed(4) + ", " + step.start_location.lng.toFixed(4) : "",
+        ponto: leg.startLocation ? leg.startLocation.latLng.latitude.toFixed(4) + ", " + leg.startLocation.latLng.longitude.toFixed(4) : "",
         velocidadeAtual: 0,
         velocidadeLivre: 0,
         multiplicador: multiplicador,
@@ -313,7 +320,7 @@ async function consultarTransito() {
 
     return {
       ok: true,
-      fonte: temTrafegoReal ? "Google Maps Directions API (trânsito em tempo real)" : "Google Maps Directions API (tempo estimado - sem dados de trânsito em tempo real)",
+      fonte: temTrafegoReal ? "Google Maps Routes API (trânsito em tempo real)" : "Google Maps Routes API (tempo estimado - sem dados de trânsito em tempo real)",
       tempoLivreMin: tempoLivreFinal,
       tempoAtualMin: tempoAtualFinal,
       temTrafegoReal,
@@ -321,18 +328,27 @@ async function consultarTransito() {
       classificacao,
       distanciaKm: distanciaKmFinal,
       segmentos,
-      incidentes: [], // Google Maps Directions API não retorna incidentes diretamente; exibimos abaixo se houver
+      incidentes: [],
       verificadoEm: new Date().toISOString(),
     };
 
   } catch (e) {
-    console.warn("[trânsito] Erro no Google Maps Directions API:", limpar(e.message));
+    console.warn("[trânsito] Erro no Routes API:", limpar(e.message));
     return await consultarTransitoFallback();
   }
 }
 
 /**
- * Fallback: método antigo com Traffic Flow (pontos fixos) se a Directions API falhar
+ * Converte duração ISO 8601 (ex: "3600s") para segundos
+ */
+function parseDuration(isoDuration) {
+  if (!isoDuration) return 0;
+  const match = isoDuration.match(/^(\d+)s$/);
+  return match ? parseInt(match[1], 10) : 0;
+}
+
+/**
+ * Fallback: estimativa de distância se a Routes API falhar
  */
 async function consultarTransitoFallback() {
   if (!CFG.googleMapsKey) {
@@ -347,7 +363,7 @@ async function consultarTransitoFallback() {
 
   return {
     ok: true,
-    fonte: "Google Maps Directions API (fallback - estimativa de distância)",
+    fonte: "Google Maps Routes API (fallback - estimativa de distância)",
     tempoLivreMin,
     tempoAtualMin: tempoLivreMin,
     temTrafegoReal: false,
@@ -369,7 +385,7 @@ async function consultarTransitoFallback() {
  * Retorna lista de incidentes: { tipo, descricao, gravidade, pubMillis, start, end, delay }
  */
 async function consultarIncidentes() {
-  // Google Maps Directions API não retorna incidentes (obras/acidentes) diretamente.
+  // Google Maps Routes API não retorna incidentes (obras/acidentes) diretamente.
   // Retorna vazio; o frontend exibe "Sem obras ou acidentes reportados na rota".
   return [];
 }
@@ -709,7 +725,7 @@ const servidor = http.createServer(async (req, res) => {
         ok: true,
         integracoes: {
           clima: "Open-Meteo (sem chave)",
-          transito: CFG.googleMapsKey ? "Google Maps Directions API" : "Não configurado",
+          transito: CFG.googleMapsKey ? "Google Maps Routes API" : "Não configurado",
           push: (CFG.vapidPublicKey && CFG.vapidPrivateKey) ? "VAPID configurado" : "Não configurado",
         },
         inscricoesPush: inscricoesPush.size,
@@ -764,6 +780,6 @@ process.on("SIGINT", () => {
 servidor.listen(CFG.porta, "0.0.0.0", () => {
   console.log(`Site no ar em http://0.0.0.0:${CFG.porta}`);
   console.log(`  Clima  : Open-Meteo (${CFG.climaCidade})`);
-  console.log(`  Trânsito: ${CFG.googleMapsKey ? "Google Maps Directions API" : "Não configurado (defina GOOGLE_MAPS_API_KEY no .env)"}`);
+  console.log(`  Trânsito: ${CFG.googleMapsKey ? "Google Maps Routes API" : "Não configurado (defina GOOGLE_MAPS_API_KEY no .env)"}`);
   console.log(`  Push   : ${(CFG.vapidPublicKey && CFG.vapidPrivateKey) ? "VAPID pronto (notificações segunda a sexta)" : "Não configurado"}`);
 });
