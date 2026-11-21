@@ -59,14 +59,12 @@ const CFG = {
   climaCidade: process.env.CLIMA_CIDADE || "Vitória da Conquista",
   climaTz: process.env.CLIMA_TIMEZONE || "America/Bahia",
 
-  // Trânsito (TomTom)
-  tomtomKey: process.env.TOMTOM_API_KEY || "",
+  // Trânsito (Google Maps Directions API)
+  googleMapsKey: process.env.GOOGLE_MAPS_API_KEY || "",
   transitoOrigemLat: Number(process.env.TRANSITO_ORIGEM_LAT || -15.7215),
   transitoOrigemLon: Number(process.env.TRANSITO_ORIGEM_LON || -41.34411),
   transitoDestinoLat: Number(process.env.TRANSITO_DESTINO_LAT || -14.8661),
   transitoDestinoLon: Number(process.env.TRANSITO_DESTINO_LON || -40.8394),
-  transitoDistanciaKm: Number(process.env.TRANSITO_DISTANCIA_KM || 150),
-  transitoVelocidadeLivre: Number(process.env.TRANSITO_VELOCIDADE_LIVRE || 80),
 
   // Web Push (VAPID)
   vapidPublicKey: process.env.VAPID_PUBLIC_KEY || "",
@@ -228,58 +226,60 @@ function classificarTempoViagem(minutos) {
 }
 
 /**
- * Consulta o TomTom Routing API para calcular a rota completa com trânsito em tempo real.
+ * Consulta o Google Maps Directions API para calcular a rota completa com trânsito em tempo real.
  * Funciona igual ao Google Maps: considera cada segmento da estrada com trânsito atual.
  * Retorna: { ok, tempoLivreMin, tempoAtualMin, classificacao, distanciaKm, segmento..., erro? }
  */
 async function consultarTransito() {
-  if (!CFG.tomtomKey) {
-    return { ok: false, erro: "TOMTOM_API_KEY não configurada no .env" };
+  if (!CFG.googleMapsKey) {
+    return { ok: false, erro: "GOOGLE_MAPS_API_KEY não configurada no .env" };
   }
 
   const origem = `${CFG.transitoOrigemLat},${CFG.transitoOrigemLon}`;
   const destino = `${CFG.transitoDestinoLat},${CFG.transitoDestinoLon}`;
 
-  // traffic=true => considera trânsito em tempo real (igual ao Google Maps)
-  const url = "https://api.tomtom.com/routing/1/calculateRoute/" +
-    origem + "/" + destino + "/json" +
-    "?key=" + CFG.tomtomKey +
-    "&travelMode=car" +
-    "&traffic=true" +
+  // departureTime=now => considera trânsito em tempo real (igual ao Google Maps)
+  const url = "https://maps.googleapis.com/maps/api/directions/json" +
+    "?origin=" + encodeURIComponent(origem) +
+    "&destination=" + encodeURIComponent(destino) +
+    "&mode=driving" +
+    "&departureTime=now" +
+    "&traffic_model=best_guess" +
     "&language=pt-BR" +
-    "&vehicleMaxSpeed=120";
+    "&region=BR" +
+    "&key=" + CFG.googleMapsKey;
 
   try {
     const r = await buscar(url, { headers: { "User-Agent": "site-universitarios-divisa-alegre" } });
     if (!r.ok) {
-      console.warn("[trânsito] TomTom Routing HTTP " + r.status);
-      // Fallback: tenta o método antigo (Traffic Flow) se a Routing falhar
+      console.warn("[trânsito] Google Maps HTTP " + r.status);
       return await consultarTransitoFallback();
     }
 
     const d = await r.json();
-    const route = d.routes && d.routes[0];
-    if (!route) {
-      console.warn("[trânsito] TomTom sem rotas retornadas");
+    if (d.status !== "OK" || !d.routes || d.routes.length === 0) {
+      console.warn("[trânsito] Google Maps status:", d.status, d.error_message || "");
       return await consultarTransitoFallback();
     }
 
-    const summary = route.summary || {};
-    const distanciaMetros = summary.lengthInMeters || 0;
-    const tempoComTransitoSeg = summary.travelTimeInSeconds || 0;      // com trânsito
-    const tempoSemTransitoSeg = summary.noTrafficTravelTimeInSeconds || 0; // sem trânsito
+    const route = d.routes[0];
+    const leg = route.legs[0];
 
-    // Detecta se a TomTom tem dados reais de trânsito (tempo com trânsito diferente do sem trânsito)
+    const distanciaMetros = leg.distance ? leg.distance.value : 0;
+    const tempoComTransitoSeg = leg.duration_in_traffic ? leg.duration_in_traffic.value : 0;
+    const tempoSemTransitoSeg = leg.duration ? leg.duration.value : 0;
+
+    // Detecta se o Google tem dados reais de trânsito (duração com trânsito diferente da sem trânsito)
     const temTrafegoReal = tempoComTransitoSeg > 0 && tempoSemTransitoSeg > 0 && tempoComTransitoSeg !== tempoSemTransitoSeg;
 
-    const distanciaKmFinal = distanciaKm > 0 ? distanciaKm : Math.round(CFG.transitoDistanciaKm * 10) / 10;
+    const distanciaKmFinal = distanciaMetros > 0 ? Math.round((distanciaMetros / 1000) * 10) / 10 : Math.round(CFG.transitoDistanciaKm * 10) / 10;
     const tempoAtualMin = Math.round(tempoComTransitoSeg / 60);
     const tempoLivreMin = Math.round(tempoSemTransitoSeg / 60);
 
     // Se não há dados de trânsito real, usa o tempo livre como base (mostra estimativa)
     const tempoAtualFinal = temTrafegoReal ? tempoAtualMin : tempoLivreMin;
 
-    // Se a API não retornou noTrafficTravelTimeInSeconds, calcula estimativa
+    // Se a API não retornou duração sem trânsito, calcula estimativa
     const tempoLivreFinal = tempoLivreMin > 0 ? tempoLivreMin : Math.round((distanciaKmFinal / 80) * 60);
 
     const classificacao = classificarTempoViagem(tempoAtualFinal);
@@ -287,28 +287,19 @@ async function consultarTransito() {
     // Multiplicador para exibição
     const multiplicador = tempoLivreFinal > 0 ? Number((tempoAtualFinal / tempoLivreFinal).toFixed(2)) : 1;
 
-    // Busca obras e acidentes na rota (não falha o trânsito se der erro)
-    let incidentes = [];
-    try { incidentes = await consultarIncidentes(); } catch (e) { console.warn("[incidentes] Erro ao consultar:", limpar(e.message)); }
-
     // Detalhes dos trechos da rota (para exibição de segmentos)
     const segmentos = [];
-    const legs = route.legs || [];
-    for (const leg of legs) {
-      const points = leg.points || [];
-      for (let i = 0; i < points.length - 1; i += Math.max(1, Math.floor(points.length / 3))) {
-        const p = points[i];
-        segmentos.push({
-          ponto: p.latitude.toFixed(4) + ", " + p.longitude.toFixed(4),
-          velocidadeAtual: 0,
-          velocidadeLivre: 0,
-          multiplicador: multiplicador,
-          congestionamento: 0,
-          roadClosure: false,
-        });
-        if (segmentos.length >= 3) break;
-      }
-      if (segmentos.length >= 3) break;
+    const steps = leg.steps || [];
+    for (let i = 0; i < Math.min(steps.length, 3); i++) {
+      const step = steps[i];
+      segmentos.push({
+        ponto: step.start_location ? step.start_location.lat.toFixed(4) + ", " + step.start_location.lng.toFixed(4) : "",
+        velocidadeAtual: 0,
+        velocidadeLivre: 0,
+        multiplicador: multiplicador,
+        congestionamento: 0,
+        roadClosure: false,
+      });
     }
 
     // Se não conseguiu montar segmentos da rota, usa fallback com pontos fixos
@@ -322,7 +313,7 @@ async function consultarTransito() {
 
     return {
       ok: true,
-      fonte: temTrafegoReal ? "TomTom Routing API (trânsito em tempo real)" : "TomTom Routing API (tempo estimado - sem dados de trânsito em tempo real)",
+      fonte: temTrafegoReal ? "Google Maps Directions API (trânsito em tempo real)" : "Google Maps Directions API (tempo estimado - sem dados de trânsito em tempo real)",
       tempoLivreMin: tempoLivreFinal,
       tempoAtualMin: tempoAtualFinal,
       temTrafegoReal,
@@ -330,89 +321,45 @@ async function consultarTransito() {
       classificacao,
       distanciaKm: distanciaKmFinal,
       segmentos,
-      incidentes,
+      incidentes: [], // Google Maps Directions API não retorna incidentes diretamente; exibimos abaixo se houver
       verificadoEm: new Date().toISOString(),
     };
 
   } catch (e) {
-    console.warn("[trânsito] Erro no Routing API:", limpar(e.message));
+    console.warn("[trânsito] Erro no Google Maps Directions API:", limpar(e.message));
     return await consultarTransitoFallback();
   }
 }
 
 /**
- * Fallback: método antigo com Traffic Flow (pontos fixos) se a Routing API falhar
+ * Fallback: método antigo com Traffic Flow (pontos fixos) se a Directions API falhar
  */
 async function consultarTransitoFallback() {
-  if (!CFG.tomtomKey) {
-    return { ok: false, erro: "TOMTOM_API_KEY não configurada no .env" };
+  if (!CFG.googleMapsKey) {
+    return { ok: false, erro: "GOOGLE_MAPS_API_KEY não configurada no .env" };
   }
-
-  const pontosRota = [
-    { lat: CFG.transitoOrigemLat, lon: CFG.transitoOrigemLon, nome: "Divisa Alegre" },
-    { lat: -13.856, lon: -40.085, nome: "Jequié (BR-116)" },
-    { lat: CFG.transitoDestinoLat, lon: CFG.transitoDestinoLon, nome: "Vitória da Conquista" },
-  ];
-
-  const resultados = [];
-
-  for (const ponto of pontosRota) {
-    try {
-      const url = `https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json` +
-        `?point=${ponto.lat},${ponto.lon}&unit=KMPH&key=${CFG.tomtomKey}`;
-
-      const r = await buscar(url, { headers: { "User-Agent": "site-universitarios-divisa-alegre" } });
-      if (!r.ok) {
-        console.warn(`[trânsito fallback] TomTom ${ponto.nome}: HTTP ${r.status}`);
-        continue;
-      }
-      const d = await r.json();
-      const seg = d.flowSegmentData;
-      if (!seg) continue;
-
-      const velocidadeAtual = seg.currentSpeed || 0;
-      const velocidadeLivre = seg.freeFlowSpeed || velocidadeAtual;
-      const multiplicador = velocidadeLivre > 0 ? velocidadeLivre / Math.max(velocidadeAtual, 1) : 1;
-
-      resultados.push({
-        ponto: ponto.nome,
-        velocidadeAtual,
-        velocidadeLivre,
-        multiplicador: Number(multiplicador.toFixed(2)),
-        congestionamento: seg.confidence || 0,
-        roadClosure: seg.roadClosure || false,
-      });
-    } catch (e) {
-      console.warn(`[trânsito fallback] Erro em ${ponto.nome}:`, limpar(e.message));
-    }
-  }
-
-  if (resultados.length === 0) {
-    return { ok: false, erro: "Nenhum dado de trânsito obtido do TomTom" };
-  }
-
-  const multiplicadorMedio = resultados.reduce((s, r) => s + r.multiplicador, 0) / resultados.length;
 
   const distanciaTotalKm = CFG.transitoDistanciaKm > 0 ? CFG.transitoDistanciaKm : 120;
   const velocidadeMediaLivre = CFG.transitoVelocidadeLivre > 0 ? CFG.transitoVelocidadeLivre : 80;
   const tempoLivreMin = Math.round((distanciaTotalKm / velocidadeMediaLivre) * 60);
-  const tempoAtualMin = Math.round(tempoLivreMin * multiplicadorMedio);
 
-  const classificacao = classificarTempoViagem(tempoAtualMin);
-
-  let incidentes = [];
-  try { incidentes = await consultarIncidentes(); } catch (e) { console.warn("[incidentes] Erro ao consultar:", limpar(e.message)); }
+  const classificacao = classificarTempoViagem(tempoLivreMin);
 
   return {
     ok: true,
-    fonte: "TomTom Traffic API (fallback - pontos fixos)",
+    fonte: "Google Maps Directions API (fallback - estimativa de distância)",
     tempoLivreMin,
-    tempoAtualMin,
-    multiplicador: Number(multiplicadorMedio.toFixed(2)),
+    tempoAtualMin: tempoLivreMin,
+    temTrafegoReal: false,
+    multiplicador: 1,
     classificacao,
     distanciaKm: distanciaTotalKm,
-    segmentos: resultados,
-    incidentes,
+    segmentos: [
+      { ponto: "Divisa Alegre", velocidadeAtual: 0, velocidadeLivre: 0, multiplicador: 1, congestionamento: 0, roadClosure: false },
+      { ponto: "BR-116 (trecho médio)", velocidadeAtual: 0, velocidadeLivre: 0, multiplicador: 1, congestionamento: 0, roadClosure: false },
+      { ponto: "Vitória da Conquista", velocidadeAtual: 0, velocidadeLivre: 0, multiplicador: 1, congestionamento: 0, roadClosure: false }
+    ],
+    incidentes: [],
     verificadoEm: new Date().toISOString(),
   };
 }
@@ -422,46 +369,9 @@ async function consultarTransitoFallback() {
  * Retorna lista de incidentes: { tipo, descricao, gravidade, pubMillis, start, end, delay }
  */
 async function consultarIncidentes() {
-  if (!CFG.tomtomKey) return [];
-
-  // Bounding box que cobre a rota Divisa Alegre -> Vitória da Conquista
-  const minLat = Math.min(CFG.transitoOrigemLat, CFG.transitoDestinoLat) - 0.5;
-  const maxLat = Math.max(CFG.transitoOrigemLat, CFG.transitoDestinoLat) + 0.5;
-  const minLon = Math.min(CFG.transitoOrigemLon, CFG.transitoDestinoLon) - 0.5;
-  const maxLon = Math.max(CFG.transitoOrigemLon, CFG.transitoDestinoLon) + 0.5;
-
-  const url = "https://api.tomtom.com/traffic/services/5/incidentDetails" +
-    `?bbox=${minLon},${minLat},${maxLon},${maxLat}` +
-    `&language=pt-BR&key=${CFG.tomtomKey}`;
-
-  try {
-    const r = await buscar(url, { headers: { "User-Agent": "site-universitarios-divisa-alegre" } });
-    if (!r.ok) {
-      console.warn(`[incidentes] TomTom HTTP ${r.status}`);
-      return [];
-    }
-    const d = await r.json();
-    const incidentes = [];
-
-    for (const inc of (d.incidents || [])) {
-      const pc = inc.point || {};
-      incidentes.push({
-        tipo: inc.type || "incidente",
-        descricao: inc.description || "Sem descrição",
-        gravidade: inc.severity || "desconhecida",
-        atrasoMin: inc.delay ? Math.round(inc.delay / 60) : 0,
-        lat: pc.latitude,
-        lon: pc.longitude,
-        inicio: inc.start || "",
-        fim: inc.end || "",
-      });
-    }
-
-    return incidentes;
-  } catch (e) {
-    console.warn("[incidentes] Erro:", limpar(e.message));
-    return [];
-  }
+  // Google Maps Directions API não retorna incidentes (obras/acidentes) diretamente.
+  // Retorna vazio; o frontend exibe "Sem obras ou acidentes reportados na rota".
+  return [];
 }
 
 /**
@@ -667,8 +577,8 @@ async function verificarENotificar(tipoViagem, horaStr, categoriaPreferida) {
  * Inicia os agendadores de ida e volta (segunda a sexta)
  */
 function iniciarAgendadorNotificacoes() {
-  if (!CFG.tomtomKey) {
-    console.log("[agendador] TOMTOM_API_KEY não configurada — notificações DESATIVADAS");
+  if (!CFG.googleMapsKey) {
+    console.log("[agendador] GOOGLE_MAPS_API_KEY não configurada — notificações DESATIVADAS");
     return;
   }
   if (!CFG.vapidPublicKey || !CFG.vapidPrivateKey) {
@@ -799,7 +709,7 @@ const servidor = http.createServer(async (req, res) => {
         ok: true,
         integracoes: {
           clima: "Open-Meteo (sem chave)",
-          transito: CFG.tomtomKey ? "TomTom Traffic API" : "Não configurado",
+          transito: CFG.googleMapsKey ? "Google Maps Directions API" : "Não configurado",
           push: (CFG.vapidPublicKey && CFG.vapidPrivateKey) ? "VAPID configurado" : "Não configurado",
         },
         inscricoesPush: inscricoesPush.size,
@@ -854,6 +764,6 @@ process.on("SIGINT", () => {
 servidor.listen(CFG.porta, "0.0.0.0", () => {
   console.log(`Site no ar em http://0.0.0.0:${CFG.porta}`);
   console.log(`  Clima  : Open-Meteo (${CFG.climaCidade})`);
-  console.log(`  Trânsito: ${CFG.tomtomKey ? "TomTom Traffic API" : "Não configurado (defina TOMTOM_API_KEY no .env)"}`);
+  console.log(`  Trânsito: ${CFG.googleMapsKey ? "Google Maps Directions API" : "Não configurado (defina GOOGLE_MAPS_API_KEY no .env)"}`);
   console.log(`  Push   : ${(CFG.vapidPublicKey && CFG.vapidPrivateKey) ? "VAPID pronto (notificações segunda a sexta)" : "Não configurado"}`);
 });
