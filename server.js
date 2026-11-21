@@ -289,6 +289,10 @@ async function consultarTransito() {
 
   const classificacao = classificarTempoViagem(tempoAtualMin);
 
+  // Busca obras e acidentes na rota (não falha o trânsito se der erro)
+  let incidentes = [];
+  try { incidentes = await consultarIncidentes(); } catch (e) { console.warn("[incidentes] Erro ao consultar:", limpar(e.message)); }
+
   return {
     ok: true,
     fonte: "TomTom Traffic API",
@@ -297,8 +301,56 @@ async function consultarTransito() {
     multiplicador: Number(multiplicadorMedio.toFixed(2)),
     classificacao, // "bom" | "lento" | "ruim"
     segmentos: resultados,
+    incidentes, // obras e acidentes na rota
     verificadoEm: new Date().toISOString(),
   };
+}
+
+/**
+ * Consulta o TomTom Traffic Incidents API para obras e acidentes na área da rota
+ * Retorna lista de incidentes: { tipo, descricao, gravidade, pubMillis, start, end, delay }
+ */
+async function consultarIncidentes() {
+  if (!CFG.tomtomKey) return [];
+
+  // Bounding box que cobre a rota Divisa Alegre -> Vitória da Conquista
+  const minLat = Math.min(CFG.transitoOrigemLat, CFG.transitoDestinoLat) - 0.5;
+  const maxLat = Math.max(CFG.transitoOrigemLat, CFG.transitoDestinoLat) + 0.5;
+  const minLon = Math.min(CFG.transitoOrigemLon, CFG.transitoDestinoLon) - 0.5;
+  const maxLon = Math.max(CFG.transitoOrigemLon, CFG.transitoDestinoLon) + 0.5;
+
+  const url = "https://api.tomtom.com/traffic/services/5/incidentDetails" +
+    `?bbox=${minLon},${minLat},${maxLon},${maxLat}` +
+    `&language=pt-BR&key=${CFG.tomtomKey}`;
+
+  try {
+    const r = await buscar(url, { headers: { "User-Agent": "site-universitarios-divisa-alegre" } });
+    if (!r.ok) {
+      console.warn(`[incidentes] TomTom HTTP ${r.status}`);
+      return [];
+    }
+    const d = await r.json();
+    const incidentes = [];
+
+    for (const inc of (d.incidents || [])) {
+      const pc = inc.point || {};
+      incidentes.push({
+        tipo: inc.type || "incidente",
+        descricao: inc.description || "Sem descrição",
+        gravidade: inc.severity || "desconhecida",
+        atrasoMin: inc.delay ? Math.round(inc.delay / 60) : 0,
+        lat: pc.latitude,
+        lon: pc.longitude,
+        inicio: inc.start || "",
+        fim: inc.end || "",
+      });
+    }
+
+    return incidentes;
+  } catch (e) {
+    console.warn("[incidentes] Erro:", limpar(e.message));
+    return [];
+  }
 }
 
 /**

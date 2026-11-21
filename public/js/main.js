@@ -242,6 +242,9 @@
           <p style="margin: 12px 0 0; font-size: 0.8rem; font-weight: 700; color: ${classificacao.cor}; text-transform: uppercase;">${classificacao.texto}</p>
 
           <p style="margin: 10px 0 0; font-size: 0.65rem; color: rgba(255,255,255,0.4);">Atualizado: ${horaLocal(d.verificadoEm)} · Fonte: ${d.fonte || "TomTom"}</p>
+
+          <!-- Incidentes na rota (obras e acidentes) -->
+          ${renderIncidentes(d.incidentes || [])}
         `;
 
         // Armazena o tempo atual para uso nas notificações
@@ -250,6 +253,33 @@
       .catch(function (e) {
         cxTempoViagem.innerHTML = '<p style="color:#fff; text-align:center;">Não foi possível carregar o tempo de viagem.<br><small>' + (e.message || "") + '</small></p>';
       });
+  }
+
+  /**
+   * Renderiza a lista de incidentes (obras e acidentes) na rota
+   */
+  function renderIncidentes(incidentes) {
+    if (!incidentes || incidentes.length === 0) {
+      return '<p style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-top: 12px;">Sem obras ou acidentes reportados na rota.</p>';
+    }
+
+    const tipoEmoji = { acidente: "🚨", obra: "🚧", fechamento: "🛑", outros: "⚠️" };
+
+    const itens = incidentes.map(function (inc) {
+      const emoji = tipoEmoji[inc.tipo] || "⚠️";
+      const atraso = inc.atrasoMin > 0 ? ` (+${inc.atrasoMin} min)` : "";
+      return `
+        <div style="margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.08); border-radius: 6px; border-left: 4px solid ${inc.gravidade === "critica" || inc.gravidade === "grave" ? "#ff6b6b" : "#f0b429"};">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.2rem;">${emoji}</span>
+            <span style="font-weight: 700; color: #fff; font-size: 0.85rem;">${inc.descricao}</span>
+          </div>
+          <p style="margin: 4px 0 0; font-size: 0.7rem; color: rgba(255,255,255,0.7);">${inc.tipo} · ${inc.gravidade}${atraso}</p>
+        </div>
+      `;
+    }).join("");
+
+    return '<p style="font-size: 0.75rem; font-weight: 700; color: #fff; margin-top: 12px;">Obras e acidentes na rota:</p>' + itens;
   }
 
   carregarTempoViagem();
