@@ -269,17 +269,23 @@ async function consultarTransito() {
     const tempoComTransitoSeg = summary.travelTimeInSeconds || 0;      // com trânsito
     const tempoSemTransitoSeg = summary.noTrafficTravelTimeInSeconds || 0; // sem trânsito
 
-    const distanciaKm = Math.round((distanciaMetros / 1000) * 10) / 10;
+    // Detecta se a TomTom tem dados reais de trânsito (tempo com trânsito diferente do sem trânsito)
+    const temTrafegoReal = tempoComTransitoSeg > 0 && tempoSemTransitoSeg > 0 && tempoComTransitoSeg !== tempoSemTransitoSeg;
+
+    const distanciaKmFinal = distanciaKm > 0 ? distanciaKm : Math.round(CFG.transitoDistanciaKm * 10) / 10;
     const tempoAtualMin = Math.round(tempoComTransitoSeg / 60);
     const tempoLivreMin = Math.round(tempoSemTransitoSeg / 60);
 
+    // Se não há dados de trânsito real, usa o tempo livre como base (mostra estimativa)
+    const tempoAtualFinal = temTrafegoReal ? tempoAtualMin : tempoLivreMin;
+
     // Se a API não retornou noTrafficTravelTimeInSeconds, calcula estimativa
-    const tempoLivreFinal = tempoLivreMin > 0 ? tempoLivreMin : Math.round((distanciaKm / 80) * 60);
+    const tempoLivreFinal = tempoLivreMin > 0 ? tempoLivreMin : Math.round((distanciaKmFinal / 80) * 60);
 
-    const classificacao = classificarTempoViagem(tempoAtualMin);
+    const classificacao = classificarTempoViagem(tempoAtualFinal);
 
-    // Multiplicador para exibição (quanto o trânsito está pior que o livre)
-    const multiplicador = tempoLivreFinal > 0 ? Number((tempoAtualMin / tempoLivreFinal).toFixed(2)) : 1;
+    // Multiplicador para exibição
+    const multiplicador = tempoLivreFinal > 0 ? Number((tempoAtualFinal / tempoLivreFinal).toFixed(2)) : 1;
 
     // Busca obras e acidentes na rota (não falha o trânsito se der erro)
     let incidentes = [];
@@ -316,12 +322,13 @@ async function consultarTransito() {
 
     return {
       ok: true,
-      fonte: "TomTom Routing API (trânsito em tempo real)",
+      fonte: temTrafegoReal ? "TomTom Routing API (trânsito em tempo real)" : "TomTom Routing API (tempo estimado - sem dados de trânsito em tempo real)",
       tempoLivreMin: tempoLivreFinal,
-      tempoAtualMin,
+      tempoAtualMin: tempoAtualFinal,
+      temTrafegoReal,
       multiplicador,
-      classificacao, // "bom" | "lento" | "ruim"
-      distanciaKm,
+      classificacao,
+      distanciaKm: distanciaKmFinal,
       segmentos,
       incidentes,
       verificadoEm: new Date().toISOString(),

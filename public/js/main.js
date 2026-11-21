@@ -245,7 +245,7 @@
 
           <p style="margin: 12px 0 0; font-size: 0.8rem; font-weight: 700; color: ${classificacao.cor}; text-transform: uppercase;">${classificacao.texto}</p>
 
-          <p style="margin: 10px 0 0; font-size: 0.65rem; color: rgba(255,255,255,0.4);">Atualizado: ${horaLocal(d.verificadoEm)} · Fonte: ${d.fonte || "TomTom"}</p>
+          <p style="margin: 10px 0 0; font-size: 0.65rem; color: rgba(255,255,255,0.4);">Atualizado: ${horaLocal(d.verificadoEm)} · Fonte: ${d.fonte || "TomTom"}${d.temTrafegoReal ? "" : " · Tempo livre: " + d.tempoLivreMin + " min"}</p>
 
           <!-- Incidentes na rota (obras e acidentes) -->
           ${renderIncidentes(d.incidentes || [])}
