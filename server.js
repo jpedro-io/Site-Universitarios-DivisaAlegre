@@ -65,6 +65,8 @@ const CFG = {
   transitoOrigemLon: Number(process.env.TRANSITO_ORIGEM_LON || -41.34411),
   transitoDestinoLat: Number(process.env.TRANSITO_DESTINO_LAT || -14.8661),
   transitoDestinoLon: Number(process.env.TRANSITO_DESTINO_LON || -40.8394),
+  transitoDistanciaKm: Number(process.env.TRANSITO_DISTANCIA_KM || 150),
+  transitoVelocidadeLivre: Number(process.env.TRANSITO_VELOCIDADE_LIVRE || 80),
 
   // Web Push (VAPID)
   vapidPublicKey: process.env.VAPID_PUBLIC_KEY || "",
@@ -279,9 +281,9 @@ async function consultarTransito() {
 
   const multiplicadorMedio = resultados.reduce((s, r) => s + r.multiplicador, 0) / resultados.length;
 
-  // Estima tempo livre e atual baseado na distância (~150 km Divisa Alegre -> VCA)
-  const distanciaTotalKm = 150;
-  const velocidadeMediaLivre = 80; // km/h média em estrada livre
+  // Estima tempo livre e atual baseado na distância configurada
+  const distanciaTotalKm = CFG.transitoDistanciaKm > 0 ? CFG.transitoDistanciaKm : 150;
+  const velocidadeMediaLivre = CFG.transitoVelocidadeLivre > 0 ? CFG.transitoVelocidadeLivre : 80; // km/h média em estrada livre
   const tempoLivreMin = Math.round((distanciaTotalKm / velocidadeMediaLivre) * 60);
   const tempoAtualMin = Math.round(tempoLivreMin * multiplicadorMedio);
 
