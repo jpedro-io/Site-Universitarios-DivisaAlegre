@@ -377,6 +377,34 @@
     50% { box-shadow: 0 14px 40px rgba(27, 58, 160, 0.30); }
     100% { box-shadow: 0 14px 40px rgba(10, 20, 54, 0.18); }
   }
+
+  /* ============================ ANIMACOES DE ENTRADA ============================ */
+  .faixa__conteudo {
+    animation: entrarSecao 0.8s cubic-bezier(0.23, 1, 0.32, 1) 0.1s both;
+  }
+
+  /* ============================ SCROLL REVEAL ============================ */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.8s cubic-bezier(0.23, 1, 0.32, 1), transform 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  .reveal.revealed {
+    opacity: 1;
+    transform: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+    .faixa__conteudo {
+      animation: none;
+      opacity: 1;
+    }
+  }
 </style>
 </head>
 <body>
@@ -411,14 +439,14 @@
 <main>
 
   <!-- FAIXA -->
-  <section class="faixa">
+  <section class="faixa reveal">
     <div class="faixa__conteudo">
       <h1>Universidades</h1>
       <p>As principais instituições atendidas pelo transporte, todas em Vitória da Conquista (BA).</p>
     </div>
   </section>
 
-  <section class="secao">
+  <section class="secao reveal">
     <div class="secao__wrap">
 
       <div class="secao__etiqueta">Instituições atendidas</div>
@@ -428,7 +456,7 @@
       <div class="grade-universidades">
 
         <!-- ===== CARD 1 de 7: FACULDADE ANHANGUERA ===== -->
-        <article class="universidade">
+        <article class="universidade reveal">
           <div class="universidade__foto">
             <img src="img/anhanguera.jpg" alt="Fachada da Faculdade Anhanguera em Vitória da Conquista" loading="lazy">
             <span class="universidade__sigla">Anhanguera</span>
@@ -444,7 +472,7 @@
         </article>
 
         <!-- ===== CARD 2 de 7: IFBA ===== -->
-        <article class="universidade">
+        <article class="universidade reveal">
           <div class="universidade__foto">
             <img src="img/ifba.jpg" alt="Entrada do Instituto Federal da Bahia, campus Vitória da Conquista" loading="lazy">
             <span class="universidade__sigla">IFBA</span>
@@ -460,7 +488,7 @@
         </article>
 
         <!-- ===== CARD 3 de 7: UNEX ===== -->
-        <article class="universidade">
+        <article class="universidade reveal">
           <div class="universidade__foto">
             <img src="img/unex.jpg" alt="Fachada do Centro Universitário de Excelência (UNEX)" loading="lazy">
             <span class="universidade__sigla">UNEX</span>
@@ -476,7 +504,7 @@
         </article>
 
         <!-- ===== CARD 4 de 7: UNOPAR ===== -->
-        <article class="universidade">
+        <article class="universidade reveal">
           <div class="universidade__foto">
             <img src="img/unopar.jpg" alt="Entrada da Unopar em Vitória da Conquista" loading="lazy">
             <span class="universidade__sigla">Unopar</span>
@@ -492,7 +520,7 @@
         </article>
 
         <!-- ===== CARD 5 de 7: FAINOR ===== -->
-        <article class="universidade">
+        <article class="universidade reveal">
           <div class="universidade__foto">
             <img src="img/fainor.jpg" alt="Fachada da Faculdade Independente do Nordeste (FAINOR)" loading="lazy">
             <span class="universidade__sigla">FAINOR</span>
@@ -508,7 +536,7 @@
         </article>
 
         <!-- ===== CARD 6 de 7: FASA / UNINASSAU ===== -->
-        <article class="universidade">
+        <article class="universidade reveal">
           <div class="universidade__foto">
             <img src="img/fasa-uninassau.jpg" alt="Fachada do Shopping Boulevard, unidade FASA / UNINASSAU" loading="lazy">
             <span class="universidade__sigla">FASA / UNINASSAU</span>
@@ -524,7 +552,7 @@
         </article>
 
         <!-- ===== CARD 7 de 7: UESB ===== -->
-        <article class="universidade">
+        <article class="universidade reveal">
           <div class="universidade__foto">
             <img src="img/uesb.jpg" alt="Portaria da Universidade Estadual do Sudoeste da Bahia (UESB)" loading="lazy">
             <span class="universidade__sigla">UESB</span>
@@ -591,6 +619,26 @@
     document.querySelectorAll("[data-ano]").forEach(function (el) {
       el.textContent = new Date().getFullYear();
     });
+
+    /* Scroll reveal — apenas quando nao reduz movimento */
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      var observador = new IntersectionObserver(function (entradas) {
+        entradas.forEach(function (entrada) {
+          if (entrada.isIntersecting) {
+            entrada.target.classList.add("revealed");
+            observador.unobserve(entrada.target);
+          }
+        });
+      }, { threshold: 0.15 });
+
+      document.querySelectorAll(".reveal").forEach(function (el) {
+        observador.observe(el);
+      });
+    } else {
+      document.querySelectorAll(".reveal").forEach(function (el) {
+        el.classList.add("revealed");
+      });
+    }
   })();
 </script>
 </body>

@@ -356,6 +356,34 @@
     50% { box-shadow: 0 28px 60px rgba(10, 20, 54, 0.18); transform: translateY(-4px); }
   }
   .ferramenta { animation: respirar 5s ease-in-out infinite; }
+
+  /* ============================ ANIMACOES DE ENTRADA ============================ */
+  .faixa__conteudo {
+    animation: entrarSecao 0.8s cubic-bezier(0.23, 1, 0.32, 1) 0.1s both;
+  }
+
+  /* ============================ SCROLL REVEAL ============================ */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.8s cubic-bezier(0.23, 1, 0.32, 1), transform 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  .reveal.revealed {
+    opacity: 1;
+    transform: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+    .faixa__conteudo {
+      animation: none;
+      opacity: 1;
+    }
+  }
 </style>
 </head>
 <body>
@@ -390,14 +418,14 @@
 <main>
 
   <!-- FAIXA -->
-  <section class="faixa">
+  <section class="faixa reveal">
     <div class="faixa__conteudo">
       <h1>Manual dos Universitários</h1>
       <p>Dicas de sites, ferramentas de estudo e documentos úteis para o dia a dia da faculdade.</p>
     </div>
   </section>
 
-  <section class="secao">
+  <section class="secao reveal">
     <div class="secao__wrap">
 
       <div class="secao__etiqueta">Ferramentas úteis e cursos</div>
@@ -407,7 +435,7 @@
       <div class="grade-ferramentas">
 
         <!-- ===== CARD: IFRS MUNDI ===== -->
-        <article class="ferramenta">
+        <article class="ferramenta reveal">
           <h3 class="ferramenta__nome">IFRS Mundi (IFSul)</h3>
           <p>Plataforma de cursos online e gratuitos com certificado sem custos. Excelente para horas complementares na faculdade e para aprender idiomas (Inglês, Espanhol, Libras e Português Instrumental) no teu próprio ritmo.</p>
           <div class="ferramenta__links">
@@ -416,7 +444,7 @@
         </article>
 
         <!-- ===== CARD: NOTEBOOKLM ===== -->
-        <article class="ferramenta">
+        <article class="ferramenta reveal">
           <h3 class="ferramenta__nome">NotebookLM (Google)</h3>
           <p>IA focada em estudos. Carregas os teus próprios PDFs, slides, artigos ou anotações de aula e a ferramenta gera resumos, cronogramas, cartões de memória (flashcards), pequenos questionários para testar os teus conhecimentos e resumos em áudio sem inventar informações fora do teu material.</p>
           <div class="ferramenta__links">
@@ -426,7 +454,7 @@
         </article>
 
         <!-- ===== CARD: ARENA IA ===== -->
-        <article class="ferramenta">
+        <article class="ferramenta reveal">
           <h3 class="ferramenta__nome">Arena IA</h3>
           <p>Plataforma para testar e comparar modelos de inteligência artificial (como ChatGPT, Claude, Gemini e Grok). Podes usar o modo Batalha para ver qual IA responde melhor à tua pergunta sem viés, o modo Agente, ou consultar dois modelos em simultâneo no modo Lado a Lado.</p>
           <div class="ferramenta__links">
@@ -436,12 +464,12 @@
 
       </div>
 
-      <div class="bloco-titulo">Organização e produtividade acadêmica (recomendados)<span></span></div>
+      <div class="bloco-titulo reveal">Organização e produtividade acadêmica (recomendados)<span></span></div>
 
       <div class="grade-ferramentas">
 
         <!-- ===== CARD: NOTION ===== -->
-        <article class="ferramenta">
+        <article class="ferramenta reveal">
           <h3 class="ferramenta__nome">Notion</h3>
           <p>A ferramenta definitiva de organização para estudantes. Permite criar quadros de horários de aulas, acompanhar entregas de trabalhos, gerir datas de exames, guardar apontamentos por disciplina e organizar a vida pessoal num só espaço personalizável.</p>
           <div class="ferramenta__links">
@@ -450,7 +478,7 @@
         </article>
 
         <!-- ===== CARD: ANKI ===== -->
-        <article class="ferramenta">
+        <article class="ferramenta reveal">
           <h3 class="ferramenta__nome">Anki</h3>
           <p>Aplicativo de flashcards (cartões de memorização) baseado no sistema de repetição espaçada. É a ferramenta mais recomendada para memorizar termos técnicos, fórmulas, conceitos complexos e vocabulário de idiomas de forma eficiente para os exames.</p>
           <div class="ferramenta__links">
@@ -459,7 +487,7 @@
         </article>
 
         <!-- ===== CARD: ZOTERO ===== -->
-        <article class="ferramenta">
+        <article class="ferramenta reveal">
           <h3 class="ferramenta__nome">Zotero</h3>
           <p>Gestor de referências bibliográficas gratuito e de código aberto. Ajuda a recolher, organizar e citar artigos científicos, livros e documentos de forma automática, poupando horas na formatação dos trabalhos acadêmicos.</p>
           <div class="ferramenta__links">
@@ -472,7 +500,7 @@
     </div>
   </section>
 
-  <section class="secao">
+  <section class="secao reveal">
     <div class="secao__wrap">
 
       <div class="secao__etiqueta">Documentação e declarações</div>
@@ -480,7 +508,7 @@
       <p class="secao__subtitulo">Modelo de declaração para justificativa acadêmica em caso de atrasos no transporte ou imprevistos.</p>
 
       <div class="grade-ferramentas">
-        <article class="ferramenta">
+        <article class="ferramenta reveal">
           <h3 class="ferramenta__nome">Declaração de Atrasos no Transporte / Comprovativo de Presença</h3>
           <p>Abra ficheiro no Google Drive para consultar o modelo de Declaração de Atrasos e apresentar a justificativa na faculdade quando houver atraso no transporte ou algum imprevisto. O documento está em word.docx, é só baixar e editar no Word ou Docs, ele é autoexplicativo.</p>
           <div class="ferramenta__links">
@@ -539,6 +567,26 @@
     document.querySelectorAll("[data-ano]").forEach(function (el) {
       el.textContent = new Date().getFullYear();
     });
+
+    /* Scroll reveal — apenas quando nao reduz movimento */
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      var observador = new IntersectionObserver(function (entradas) {
+        entradas.forEach(function (entrada) {
+          if (entrada.isIntersecting) {
+            entrada.target.classList.add("revealed");
+            observador.unobserve(entrada.target);
+          }
+        });
+      }, { threshold: 0.15 });
+
+      document.querySelectorAll(".reveal").forEach(function (el) {
+        observador.observe(el);
+      });
+    } else {
+      document.querySelectorAll(".reveal").forEach(function (el) {
+        el.classList.add("revealed");
+      });
+    }
   })();
 </script>
 </body>

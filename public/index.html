@@ -837,6 +837,25 @@
     * { animation: none !important; transition-duration: 0.01s !important; }
     .heroi__conteudo, .faixa__conteudo { opacity: 1; transform: none; }
   }
+
+  /* ============================ SCROLL REVEAL ============================ */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.8s cubic-bezier(0.23, 1, 0.32, 1), transform 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  .reveal.revealed {
+    opacity: 1;
+    transform: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
 </style>
 </head>
 <body>
@@ -870,7 +889,7 @@
 
 <main>
   <!-- HERO: foto da van + frase + horario + clima e mapa lado a lado -->
-  <section class="heroi">
+  <section class="heroi reveal">
     <div class="heroi__foto" aria-hidden="true"></div>
     <div class="heroi__sombra" aria-hidden="true"></div>
 
@@ -915,7 +934,7 @@
   </section>
 
   <!-- INFORMACOES (apenas na inicial) -->
-  <section class="secao">
+  <section class="secao reveal">
     <div class="secao__wrap">
       <div class="secao__etiqueta">Informações</div>
       <h2 class="secao__titulo">Tudo o que o universitário precisa saber</h2>
@@ -1250,6 +1269,26 @@
     document.querySelectorAll("[data-ano]").forEach(function (el) {
       el.textContent = new Date().getFullYear();
     });
+
+    /* Scroll reveal — apenas quando nao reduz movimento */
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      var observador = new IntersectionObserver(function (entradas) {
+        entradas.forEach(function (entrada) {
+          if (entrada.isIntersecting) {
+            entrada.target.classList.add("revealed");
+            observador.unobserve(entrada.target);
+          }
+        });
+      }, { threshold: 0.15 });
+
+      document.querySelectorAll(".reveal").forEach(function (el) {
+        observador.observe(el);
+      });
+    } else {
+      document.querySelectorAll(".reveal").forEach(function (el) {
+        el.classList.add("revealed");
+      });
+    }
   })();
 </script>
 </body>
