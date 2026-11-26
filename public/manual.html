@@ -47,8 +47,6 @@
     background: var(--fundo-suave);
     line-height: 1.6;
     font-size: 11pt;
-    padding-left: max(16px, env(safe-area-inset-left, 0px));
-    padding-right: max(16px, env(safe-area-inset-right, 0px));
     color-scheme: light;
     overflow-x: hidden;
   }
@@ -78,11 +76,13 @@
     padding: 0 max(16px, env(safe-area-inset-left, 0px));
   }
   .cabecalho__interno {
-    width: min(1140px, 100% - 2rem);
+    width: 100%;
     display: flex;
     align-items: center;
     gap: 14px;
+    justify-content: center;
     margin: 0 auto;
+    padding: 0 max(16px, env(safe-area-inset-left, 0px));
   }
   .cabecalho__logo { display: inline-flex; align-items: center; }
   .cabecalho__logo img { height: 52px; width: auto; }
