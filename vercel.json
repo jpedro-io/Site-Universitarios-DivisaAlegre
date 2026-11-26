@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "server.js", "use": "@vercel/node" },
+    { "src": "api/notificacao.js", "use": "@vercel/node" },
+    { "src": "api/enviar-notificacao.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/sw.js", "headers": { "Service-Worker-Allowed": "/" }, "continue": true },
+    { "src": "/api/notificacao", "dest": "api/notificacao.js" },
+    { "src": "/api/enviar-notificacao", "dest": "api/enviar-notificacao.js" },
+    { "src": "/(.*)", "dest": "server.js" }
+  ],
+  "crons": [
+    { "path": "/api/enviar-notificacao?tipo=lista", "schedule": "0 10 * * *", "description": "Notificação de lista às 10h" },
+    { "path": "/api/enviar-notificacao?tipo=transito", "schedule": "0 15 * * *", "description": "Notificação de trânsito às 15h" }
+  ]
+}

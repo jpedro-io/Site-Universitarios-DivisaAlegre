@@ -1,58 +1,68 @@
 /*
- * ARQUIVO: public/sw.js  -  Service Worker para cache de arquivos estáticos
+ * ARQUIVO: public/sw.js  -  Service Worker para notificações push
  * Site da Comissão de Transporte dos Universitários de Divisa Alegre - MG
- * ---------------------------------------------------------------------------
- * Serve arquivos do cache quando possível, cai na rede se não tiver.
+ *
+ * Recebe push notifications do servidor (Vercel Cron) e exibe no navegador
+ * do usuário mesmo com o site fechado.
  */
 
-const NOME_CACHE = "site-universitarios-v1";
-const ARQUIVOS_CACHE = [
-  "/",
-  "/index.html",
-  "/css/style.css",
-  "/js/main.js",
-  "/img/logo-contorno.png",
-  "/img/favicon.png",
-];
+const CACHE_NAME = "site-universitarios-v1";
 
-// Instalação: precache dos arquivos essenciais
-self.addEventListener("install", (evento) => {
-  evento.waitUntil(
-    caches.open(NOME_CACHE).then((cache) => cache.addAll(ARQUIVOS_CACHE))
-  );
+self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
-// Ativação: limpa caches antigos
-self.addEventListener("activate", (evento) => {
-  evento.waitUntil(
-    caches.keys().then((chaves) =>
-      Promise.all(
-        chaves
-          .filter((chave) => chave !== NOME_CACHE)
-          .map((chave) => caches.delete(chave))
-      )
-    )
-  );
-  self.clients.claim();
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
 });
 
-// Fetch: serve do cache, cai na rede se não tiver
-self.addEventListener("fetch", (evento) => {
-  const { request } = evento;
-  // Só cacheia GET
-  if (request.method !== "GET") return;
+self.addEventListener("push", (event) => {
+  let dados = {
+    titulo: "Transporte Universitário · Divisa Alegre",
+    corpo: "Você tem um novo aviso do transporte universitário.",
+    icone: "/img/favicon.png",
+    tag: "transporte-universitario",
+    url: "/",
+  };
 
-  evento.respondWith(
-    caches.match(request).then((respostaCache) => {
-      if (respostaCache) return respostaCache;
-      return fetch(request).then((respostaRede) => {
-        // Não cacheia respostas de API ou opacas
-        if (!respostaRede.ok || respostaRede.type === "opaque") return respostaRede;
-        const respostaClonada = respostaRede.clone();
-        caches.open(NOME_CACHE).then((cache) => cache.put(request, respostaClonada));
-        return respostaRede;
-      });
+  if (event.data) {
+    try {
+      const payload = event.data.json();
+      dados = { ...dados, ...payload };
+    } catch (e) {
+      dados.corpo = event.data.text() || dados.corpo;
+    }
+  }
+
+  const options = {
+    body: dados.corpo,
+    icon: dados.icone,
+    tag: dados.tag,
+    badge: dados.icone,
+    data: { url: dados.url },
+    actions: [
+      { action: "abrir", title: "Abrir site" },
+    ],
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(dados.titulo, options)
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data && event.notification.data.url ? event.notification.data.url : "/";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientes) => {
+      for (const cliente of clientes) {
+        if (cliente.url.includes(new URL(url, self.location.origin).pathname) && "focus" in cliente) {
+          return cliente.focus();
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(url);
+      }
     })
   );
 });
