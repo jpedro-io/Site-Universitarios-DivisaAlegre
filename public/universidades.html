@@ -73,7 +73,7 @@
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.30);
     display: flex;
     align-items: center;
-    padding: 0 max(16px, env(safe-area-inset-left, 0px));
+    padding: 0 max(16px, env(safe-area-inset-left, 0px)) 0 max(16px, env(safe-area-inset-right, 0px));
   }
   .cabecalho__interno {
     width: 100%;
@@ -85,14 +85,8 @@
     padding: 0 max(16px, env(safe-area-inset-left, 0px));
   }
   .cabecalho__logo { display: inline-flex; align-items: center; }
-  .cabecalho__logo img { height: 52px; width: auto; }
-  .cabecalho__marca {
-    font-family: var(--fonte-titulo);
-    font-weight: 800;
-    font-size: 1rem;
-    letter-spacing: -0.01em;
-    color: var(--texto);
-  }
+  .cabecalho__logo img { height: 77px; width: auto; }
+  .cabecalho__marca { display: none; }
 
   .menu-botao {
     position: absolute;
@@ -189,7 +183,6 @@
   /* ============================ FAIXA ============================ */
   .faixa {
     position: relative;
-    margin-top: 64px;
     padding: clamp(56px, 7vw, 100px) 0 clamp(44px, 6vw, 72px);
     background: var(--azul-royal);
     color: var(--branco);
@@ -220,7 +213,7 @@
   .secao__wrap {
     max-width: 1100px;
     margin: 0 auto;
-    padding: 0 max(16px, env(safe-area-inset-left, 0px));
+    padding: 0 max(16px, env(safe-area-inset-left, 0px)) 0 max(16px, env(safe-area-inset-right, 0px));
     width: 100%;
   }
   .secao__etiqueta {
@@ -353,8 +346,8 @@
   /* ============================ MOBILE ============================ */
   @media (max-width: 720px) {
     body { padding-block: 24px; }
-    .cabecalho__marca { font-size: 0.9rem; }
-    .cabecalho__logo img { height: 42px; }
+    .cabecalho__marca { display: none; }
+    .cabecalho__logo img { height: 64px; }
     .cabecalho__interno { padding-left: 60px; }
     .secao { padding: clamp(40px, 5vw, 64px) 0; }
     .faixa { margin-top: 0; padding: clamp(44px, 6vw, 72px) 0 clamp(36px, 5vw, 56px); }
