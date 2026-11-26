@@ -43,34 +43,7 @@
   setTimeout(function () { document.body.classList.add("pronto"); }, 40);
 
   /* ==================================================================
-     PARTE 3 - APARECER AO ROLAR ("revelar")
-     ================================================================== */
-  const alvos = document.querySelectorAll(".revelar");
-  if ("IntersectionObserver" in window) {
-    const observador = new IntersectionObserver(function (entradas) {
-      entradas.forEach(function (entrada, i) {
-        if (entrada.isIntersecting) {
-          const el = entrada.target;
-          const atraso = Number(el.dataset.atraso || (i % 4) * 90);
-          setTimeout(function () { el.classList.add("visivel"); }, atraso);
-          observador.unobserve(el);
-        }
-      });
-    }, { threshold: 0.12, rootMargin: "0px 0px -60px 0px" });
-    alvos.forEach(function (el) { observador.observe(el); });
-  } else {
-    alvos.forEach(function (el) { el.classList.add("visivel"); });
-  }
-
-  window.addEventListener("load", function () {
-    alvos.forEach(function (el) {
-      const r = el.getBoundingClientRect();
-      if (r.top < window.innerHeight * 0.9) el.classList.add("visivel");
-    });
-  });
-
-  /* ==================================================================
-     PARTE 4 - ÍCONES DO CLIMA
+     PARTE 3 - ÍCONES DO CLIMA
      ================================================================== */
   var ICONES = {
     sol: '<svg viewBox="0 0 64 64" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round"><circle cx="32" cy="32" r="12" fill="none" stroke="#fff"/><path d="M32 6v8M32 50v8M6 32h8M50 32h8M13.6 13.6l5.7 5.7M44.7 44.7l5.7 5.7M50.4 13.6l-5.7 5.7M19.3 44.7l-5.7 5.7"/></svg>',
@@ -96,7 +69,7 @@
   }
 
   /* ==================================================================
-     PARTE 5 - CLIMA
+     PARTE 4 - CLIMA
      ================================================================== */
   const cxClima = document.getElementById("clima-conteudo");
 
@@ -165,22 +138,15 @@
   if (cxClima) setInterval(carregarClima, 10 * 60 * 1000);
 
   /* ==================================================================
-     PARTE 6 - TEMPO DE VIAGEM E TRÂNSITO (ao lado do clima)
+     PARTE 5 - TEMPO DE VIAGEM E TRÂNSITO (ao lado do clima)
      ================================================================== */
   const cxTempoViagem = document.getElementById("tempo-viagem-conteudo");
 
-  /**
-   * Classifica o tempo de viagem T (em minutos) em: bom, lento ou ruim
-   * T <= 90 min  → bom
-   * T >= 100 min → lento
-   * T > 120 min  → ruim
-   */
   function classificarTempoViagem(minutos) {
-    if (minutos <= 90) return { tipo: "bom", texto: "Trânsito bom", cor: "#22c55e", icon: "check" };
-    if (minutos > 120) return { tipo: "ruim", texto: "Trânsito ruim/parado", cor: "#ff6b6b", icon: "alert" };
-    if (minutos >= 100) return { tipo: "lento", texto: "Trânsito lento", cor: "#f0b429", icon: "alert" };
-    // entre 91 e 99 min: considera bom (limite inferior)
-    return { tipo: "bom", texto: "Trânsito bom", cor: "#22c55e", icon: "check" };
+    if (minutos <= 90) return { tipo: "bom", texto: "Trânsito bom", cor: "#22c55e" };
+    if (minutos > 120) return { tipo: "ruim", texto: "Trânsito ruim/parado", cor: "#ff6b6b" };
+    if (minutos >= 100) return { tipo: "lento", texto: "Trânsito lento", cor: "#f0b429" };
+    return { tipo: "bom", texto: "Trânsito bom", cor: "#22c55e" };
   }
 
   function carregarTempoViagem() {
@@ -199,18 +165,9 @@
       .then(function (d) {
         if (!d.ok) throw new Error(d.erro || "Falha ao consultar o trânsito");
 
-        const tempoLivre = d.tempoLivreMin || 0;
         const tempoAtual = d.tempoAtualMin || 0;
         const classificacao = classificarTempoViagem(tempoAtual);
         const chegada = new Date(Date.now() + tempoAtual * 60 * 1000);
-
-        // Ícone da classificação
-        var iconeClassificacao = "";
-        if (classificacao.icon === "check") {
-          iconeClassificacao = '<svg viewBox="0 0 24 24" fill="none" stroke="' + classificacao.cor + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 28px; height: 28px;"><polyline points="20 6 9 17 4 12"/></svg>';
-        } else {
-          iconeClassificacao = '<svg viewBox="0 0 24 24" fill="none" stroke="' + classificacao.cor + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 28px; height: 28px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
-        }
 
         cxTempoViagem.innerHTML = `
           <div style="text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; margin-bottom: 16px;">
@@ -223,28 +180,11 @@
               <span style="font-size: 2rem; font-weight: 800; line-height: 1; color: ${classificacao.cor};">${tempoAtual} min</span>
               <span style="font-size: 0.85rem; font-weight: 500; color: rgba(255,255,255,0.8);">agora</span>
             </div>
-            <div style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-              ${iconeClassificacao}
-            </div>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px;">
-            <div>
-              <p style="margin: 0; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.6);">Tempo livre</p>
-              <p style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #fff;">${tempoLivre} min</p>
-            </div>
-            <div>
-              <p style="margin: 0; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.6);">Chegada prevista</p>
-              <p style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #fff;">${chegada.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</p>
-            </div>
           </div>
 
           <p style="margin: 12px 0 0; font-size: 0.8rem; font-weight: 700; color: ${classificacao.cor}; text-transform: uppercase;">${classificacao.texto}</p>
 
-          <p style="margin: 10px 0 0; font-size: 0.65rem; color: rgba(255,255,255,0.4);">Atualizado: ${horaLocal(d.verificadoEm)} · Fonte: ${d.fonte || "Google Maps"}${d.temTrafegoReal ? "" : " · Tempo livre: " + d.tempoLivreMin + " min"}</p>
-
-          <!-- Incidentes na rota (obras e acidentes) -->
-          ${renderIncidentes(d.incidentes || [])}
+          <p style="margin: 10px 0 0; font-size: 0.65rem; color: rgba(255,255,255,0.4);">Atualizado: ${horaLocal(d.verificadoEm)} · Fonte: ${d.fonte || "Google Maps"}</p>
         `;
 
         // Armazena o tempo atual para uso nas notificações
@@ -255,282 +195,29 @@
       });
   }
 
-  /**
-   * Renderiza a lista de incidentes (obras e acidentes) na rota
-   */
-  function renderIncidentes(incidentes) {
-    if (!incidentes || incidentes.length === 0) {
-      return '<p style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-top: 12px;">Sem obras ou acidentes reportados na rota.</p>';
-    }
-
-    const tipoEmoji = { acidente: "🚨", obra: "🚧", fechamento: "🛑", outros: "⚠️" };
-
-    const itens = incidentes.map(function (inc) {
-      const emoji = tipoEmoji[inc.tipo] || "⚠️";
-      const atraso = inc.atrasoMin > 0 ? ` (+${inc.atrasoMin} min)` : "";
-      return `
-        <div style="margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.08); border-radius: 6px; border-left: 4px solid ${inc.gravidade === "critica" || inc.gravidade === "grave" ? "#ff6b6b" : "#f0b429"};">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 1.2rem;">${emoji}</span>
-            <span style="font-weight: 700; color: #fff; font-size: 0.85rem;">${inc.descricao}</span>
-          </div>
-          <p style="margin: 4px 0 0; font-size: 0.7rem; color: rgba(255,255,255,0.7);">${inc.tipo} · ${inc.gravidade}${atraso}</p>
-        </div>
-      `;
-    }).join("");
-
-    return '<p style="font-size: 0.75rem; font-weight: 700; color: #fff; margin-top: 12px;">Obras e acidentes na rota:</p>' + itens;
-  }
-
   carregarTempoViagem();
   if (cxTempoViagem) setInterval(carregarTempoViagem, 5 * 60 * 1000); // atualiza a cada 5 min
 
   /* ==================================================================
-     PARTE 7 - NOTIFICAÇÕES PERSONALIZÁVEIS (Web Push / VAPID)
+     PARTE 6 - NOTIFICAÇÕES FIXAS (10h lista / 15h trânsito)
      ================================================================== */
-  let swRegistration = null;
-  let pushInscrito = false;
-  let preferencias = {
-    categorias: { bom: false, lento: false, ruim: false },
-    horaIda: "06:30",    // Divisa Alegre → Vitória da Conquista
-    horaVolta: "17:30",  // Vitória da Conquista → Divisa Alegre
-  };
+  const btnLista = document.getElementById("btn-notif-lista");
+  const btnTransito = document.getElementById("btn-notif-transito");
 
-  // Carrega preferências do localStorage se existirem
-  function carregarPreferencias() {
-    try {
-      const salvo = localStorage.getItem("preferencias-notificacoes-transito");
-      if (salvo) {
-        preferencias = JSON.parse(salvo);
-      }
-    } catch (e) {
-      console.warn("[notificacoes] Erro ao ler preferências:", e);
-    }
+  if (btnLista) {
+    btnLista.addEventListener("click", function () {
+      alert("Notificação de lista ativada! Você receberá um aviso todos os dias às 10h: \"Você já colocou seu nome na Lista? Lembre-se do horário.\"");
+    });
   }
 
-  function salvarPreferencias() {
-    localStorage.setItem("preferencias-notificacoes-transito", JSON.stringify(preferencias));
+  if (btnTransito) {
+    btnTransito.addEventListener("click", function () {
+      alert("Notificação de Trânsito ativada! Você receberá um aviso todos os dias às 15h com o clima em Conquista e um link para ver o estado do trânsito.");
+    });
   }
-
-  // Aplica preferências nos elementos do DOM
-  function aplicarPreferenciasNaUI() {
-    const chkBom = document.getElementById("chk-bom");
-    const chkLento = document.getElementById("chk-lento");
-    const chkRuim = document.getElementById("chk-ruim");
-    const horaIda = document.getElementById("hora-ida");
-    const horaVolta = document.getElementById("hora-volta");
-
-    if (chkBom) chkBom.checked = preferencias.categorias.bom;
-    if (chkLento) chkLento.checked = preferencias.categorias.lento;
-    if (chkRuim) chkRuim.checked = preferencias.categorias.ruim;
-    if (horaIda) horaIda.value = preferencias.horaIda;
-    if (horaVolta) horaVolta.value = preferencias.horaVolta;
-  }
-
-  // Salva preferências do formulário
-  function salvarPreferenciasDoFormulario() {
-    const chkBom = document.getElementById("chk-bom");
-    const chkLento = document.getElementById("chk-lento");
-    const chkRuim = document.getElementById("chk-ruim");
-    const horaIda = document.getElementById("hora-ida");
-    const horaVolta = document.getElementById("hora-volta");
-
-    preferencias.categorias.bom = chkBom ? chkBom.checked : false;
-    preferencias.categorias.lento = chkLento ? chkLento.checked : false;
-    preferencias.categorias.ruim = chkRuim ? chkRuim.checked : false;
-    preferencias.horaIda = horaIda ? horaIda.value : "06:30";
-    preferencias.horaVolta = horaVolta ? horaVolta.value : "17:30";
-
-    salvarPreferencias();
-
-    const msg = document.getElementById("msg-salvo");
-    if (msg) {
-      msg.style.display = "block";
-      setTimeout(function () { msg.style.display = "none"; }, 3000);
-    }
-
-    console.log("[notificacoes] Preferências salvas:", preferencias);
-  }
-
-  // Verifica suporte a Service Worker e Push
-  function suportaPush() {
-    return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
-  }
-
-  // Registra Service Worker
-  async function registrarServiceWorker() {
-    if (!suportaPush()) {
-      console.log("[push] Web Push não suportado neste navegador");
-      return false;
-    }
-    try {
-      swRegistration = await navigator.serviceWorker.register("/sw.js");
-      console.log("[push] Service Worker registrado:", swRegistration.scope);
-      return true;
-    } catch (e) {
-      console.error("[push] Falha ao registrar SW:", e);
-      return false;
-    }
-  }
-
-  // Obtém chave pública VAPID do servidor
-  async function obterVapidPublicKey() {
-    const r = await fetch("/api/push/vapid-public-key", { headers: { Accept: "application/json" } });
-    const d = await r.json();
-    if (!d.ok) throw new Error(d.erro || "VAPID não configurado no servidor");
-    return d.chavePublica;
-  }
-
-  // Converte base64url para Uint8Array
-  function urlBase64ParaUint8Array(base64String) {
-    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-    const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-    const rawData = atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
-    return outputArray;
-  }
-
-  // Inscreve o usuário para push (só chama quando usuário salvar com pelo menos uma categoria)
-  async function inscreverPush() {
-    if (!swRegistration) return { ok: false, erro: "Service Worker não registrado" };
-
-    try {
-      const chavePublica = await obterVapidPublicKey();
-      const applicationServerKey = urlBase64ParaUint8Array(chavePublica);
-
-      const inscricao = await swRegistration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey,
-      });
-
-      // Envia inscrição + preferências para o servidor
-      const r = await fetch("/api/push/inscrever", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          endpoint: inscricao.endpoint,
-          keys: inscricao.toJSON().keys,
-          preferencias: preferencias,
-        }),
-      });
-      const d = await r.json();
-      if (!d.ok) throw new Error(d.erro || "Falha ao salvar inscrição no servidor");
-
-      pushInscrito = true;
-      return { ok: true };
-    } catch (e) {
-      console.error("[push] Erro ao inscrever:", e);
-      return { ok: false, erro: e.message };
-    }
-  }
-
-  // Desinscreve o usuário
-  async function desinscreverPush() {
-    if (!swRegistration) return { ok: false, erro: "Service Worker não registrado" };
-
-    try {
-      const inscricao = await swRegistration.pushManager.getSubscription();
-      if (!inscricao) return { ok: true, jaDesinscrito: true };
-
-      await inscricao.unsubscribe();
-
-      await fetch("/api/push/desinscrever", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ endpoint: inscricao.endpoint }),
-      });
-
-      pushInscrito = false;
-      return { ok: true };
-    } catch (e) {
-      console.error("[push] Erro ao desinscrever:", e);
-      return { ok: false, erro: e.message };
-    }
-  }
-
-  // Verifica se já tem inscrição ativa
-  async function verificarInscricaoExistente() {
-    if (!swRegistration) return false;
-    const inscricao = await swRegistration.pushManager.getSubscription();
-    pushInscrito = !!inscricao;
-    return pushInscrito;
-  }
-
-  // Salvar preferências (chamado pelo botão no formulário)
-  async function salvarPreferenciasENotificar() {
-    // Primeiro salva as preferências locais
-    salvarPreferenciasDoFormulario();
-
-    // Verifica se pelo menos uma categoria está selecionada
-    const algumaSelecionada = preferencias.categorias.bom || preferencias.categorias.lento || preferencias.categorias.ruim;
-
-    if (!algumaSelecionada) {
-      alert("Selecione pelo menos uma categoria de notificação (bom, lento ou ruim).");
-      return;
-    }
-
-    // Se ainda não está inscrito no push, pede permissão e inscreve
-    if (!pushInscrito) {
-      const permissao = await Notification.requestPermission();
-      if (permissao !== "granted") {
-        alert("Permissão de notificação negada. Ative nas configurações do navegador.");
-        return;
-      }
-
-      const swOk = await registrarServiceWorker();
-      if (!swOk) {
-        alert("Não foi possível ativar as notificações neste navegador.");
-        return;
-      }
-
-      const resultado = await inscreverPush();
-      if (!resultado.ok) {
-        alert("Erro ao ativar notificações: " + (resultado.erro || "tente novamente"));
-        return;
-      }
-    }
-
-    // Atualiza preferências no servidor se já estiver inscrito
-    if (pushInscrito) {
-      try {
-        const inscricao = await swRegistration.pushManager.getSubscription();
-        if (inscricao) {
-          await fetch("/api/push/inscrever", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              endpoint: inscricao.endpoint,
-              keys: inscricao.toJSON().keys,
-              preferencias: preferencias,
-            }),
-          });
-        }
-      } catch (e) {
-        console.warn("[notificacoes] Erro ao atualizar preferências no servidor:", e);
-      }
-    }
-
-    alert("Preferências salvas! Você receberá notificações de trânsito de segunda a sexta nos horários escolhidos.");
-  }
-
-  // Inicializa o formulário de notificações
-  function inicializarFormularioNotificacoes() {
-    carregarPreferencias();
-    aplicarPreferenciasNaUI();
-
-    const btnSalvar = document.getElementById("salvar-preferencias");
-    if (btnSalvar) {
-      btnSalvar.addEventListener("click", salvarPreferenciasENotificar);
-    }
-  }
-
-  // Inicia tudo
-  carregarTempoViagem();
-  inicializarFormularioNotificacoes();
 
   /* ==================================================================
-     PARTE 8 - DETALHES (ano no rodapé)
+     PARTE 7 - DETALHES (ano no rodapé)
      ================================================================== */
   document.querySelectorAll("[data-ano]").forEach(function (el) {
     el.textContent = new Date().getFullYear();

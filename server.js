@@ -2,18 +2,15 @@
  * ARQUIVO: server.js  -  O "cérebro" do site (roda no servidor, não no navegador)
  * Site da Comissão de Transporte dos Universitários de Divisa Alegre - MG
  * ---------------------------------------------------------------------------
- * Servidor HTTP em Node puro. Integrações: Clima (Open-Meteo), Trânsito (TomTom),
- * Web Push (VAPID) para alertas de trânsito personalizados por horário e categoria.
+ * Servidor HTTP em Node puro. Integrações: Clima (Open-Meteo) e Trânsito (estimado).
  *
  * INDICE DAS PARTES
  *   PARTE 1  Configuração ........ lê o .env e monta o objeto CFG
  *   PARTE 2  Utilidades .......... respostas JSON, cache, rate limit, helpers
  *   PARTE 3  Clima ............... chama a Open-Meteo (não usa chave)
- *   PARTE 4  Trânsito ............ consulta TomTom Traffic API + classificação por tempo
- *   PARTE 5  Web Push ............ VAPID, inscrições com preferências, envio de notificações
- *   PARTE 6  Agendador ........... notificações segunda a sexta nos horários personalizados (ida e volta)
- *   PARTE 7  Arquivos estáticos .. entrega HTML, CSS, JS e imagens de ./public
- *   PARTE 8  Servidor ............ define as rotas /api/... e liga o site na porta
+ *   PARTE 4  Trânsito ............ tempo de viagem estimado (sem API externa)
+ *   PARTE 5  Arquivos estáticos .. entrega HTML, CSS, JS e imagens de ./public
+ *   PARTE 6  Servidor ............ define as rotas /api/... e liga o site na porta
  *
  * Rodar:  node server.js         (porta padrão 3000, ou defina PORT no .env)
  * Instalar deps: npm install
@@ -23,8 +20,6 @@ const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
 const { URL } = require("node:url");
-const schedule = require("node-schedule");
-const webPush = require("web-push");
 
 /* ------------------------------------------------------------------ */
 /* PARTE 1 - CONFIGURAÇÃO: lê o .env e monta o objeto CFG              */
@@ -59,18 +54,6 @@ const CFG = {
   climaCidade: process.env.CLIMA_CIDADE || "Vitória da Conquista",
   climaTz: process.env.CLIMA_TIMEZONE || "America/Bahia",
 
-  // Trânsito (Google Maps Routes API)
-  googleMapsKey: process.env.GOOGLE_MAPS_API_KEY || "",
-  transitoOrigemLat: Number(process.env.TRANSITO_ORIGEM_LAT || -15.7215),
-  transitoOrigemLon: Number(process.env.TRANSITO_ORIGEM_LON || -41.34411),
-  transitoDestinoLat: Number(process.env.TRANSITO_DESTINO_LAT || -14.8661),
-  transitoDestinoLon: Number(process.env.TRANSITO_DESTINO_LON || -40.8394),
-
-  // Web Push (VAPID)
-  vapidPublicKey: process.env.VAPID_PUBLIC_KEY || "",
-  vapidPrivateKey: process.env.VAPID_PRIVATE_KEY || "",
-  vapidEmail: process.env.VAPID_EMAIL || "mailto:contato@divisaalegre.mg.gov.br",
-
   pastaPublica: path.join(RAIZ, "public"),
 };
 
@@ -95,8 +78,6 @@ const MIME = {
 
 const cache = new Map();              // cache simples em memória
 const acessos = new Map();            // rate limit por IP
-// Estrutura: Map<endpoint, { inscricao, preferencias: { categorias:{bom,lento,ruim}, horaIda, horaVolta } }>
-const inscricoesPush = new Map();
 
 function json(res, status, dados) {
   const corpo = JSON.stringify(dados);
@@ -142,10 +123,9 @@ function origemPermitida(req) {
   const referer = req.headers.referer || "";
   const host = req.headers.host || "";
 
-  // Permite requisições sem origin (ex.: curl do próprio servidor, agendador interno)
+  // Permite requisições sem origin (ex.: curl do próprio servidor)
   if (!origin && !referer) return true;
 
-  // Permite se o host bater com o referer/origin
   try {
     if (referer) {
       const refHost = new URL(referer).host;
@@ -156,7 +136,7 @@ function origemPermitida(req) {
       if (oriHost === host) return true;
     }
   } catch (e) {
-    // URL inválida, nega
+    return false;
   }
 
   return false;
@@ -209,185 +189,37 @@ async function clima() {
 }
 
 /* ------------------------------------------------------------------ */
-/* PARTE 4 - TRÂNSITO: TomTom + classificação por tempo de viagem      */
+/* PARTE 4 - TRÂNSITO: tempo estimado (sem API externa)                */
 /* ------------------------------------------------------------------ */
 
 /**
- * Classifica o tempo de viagem T (minutos) em: bom, lento ou ruim
- * T <= 90 min  → bom (trânsito bom)
- * T >= 100 min → lento (trânsito lento)
- * T > 120 min  → ruim (trânsito ruim/parado)
- */
-function classificarTempoViagem(minutos) {
-  if (minutos <= 90) return "bom";
-  if (minutos > 120) return "ruim";
-  if (minutos >= 100) return "lento";
-  return "bom";
-}
-
-/**
- * Consulta o Google Maps Routes API para calcular a rota completa com trânsito em tempo real.
- * Funciona igual ao Google Maps: considera cada segmento da estrada com trânsito atual.
- * Retorna: { ok, tempoLivreMin, tempoAtualMin, classificacao, distanciaKm, segmento..., erro? }
+ * Retorna o tempo de viagem estimado fixo (sem consulta a API do Google Maps/TomTom).
+ * Valores padrão: 120 km a 80 km/h ≈ 90 min (tempo livre).
  */
 async function consultarTransito() {
-  if (!CFG.googleMapsKey) {
-    return { ok: false, erro: "GOOGLE_MAPS_API_KEY não configurada no .env" };
-  }
-
-  const origem = `${CFG.transitoOrigemLat},${CFG.transitoOrigemLon}`;
-  const destino = `${CFG.transitoDestinoLat},${CFG.transitoDestinoLon}`;
-
-  const body = {
-    origin: { location: { latLng: { latitude: CFG.transitoOrigemLat, longitude: CFG.transitoOrigemLon } } },
-    destination: { location: { latLng: { latitude: CFG.transitoDestinoLat, longitude: CFG.transitoDestinoLon } } },
-    travelMode: "DRIVE",
-    routingPreference: "TRAFFIC_AWARE",
-    departureTime: new Date().toISOString(),
-    languageCode: "pt-BR",
-    regionCode: "BR",
-    units: "METRIC",
-  };
-
-  try {
-    const r = await buscar("https://routes.googleapis.com/directions/v2:computeRoutes", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Goog-Api-Key": CFG.googleMapsKey,
-        "X-Goog-FieldMask": "routes.distanceMeters,routes.duration,routes.durationInTraffic,routes.localizedValues,routes.legs,routes.travelAdvisory",
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!r.ok) {
-      console.warn("[trânsito] Routes API HTTP " + r.status);
-      return await consultarTransitoFallback();
-    }
-
-    const d = await r.json();
-    if (!d.routes || d.routes.length === 0) {
-      console.warn("[trânsito] Routes API sem rotas retornadas:", d.error || "");
-      return await consultarTransitoFallback();
-    }
-
-    const route = d.routes[0];
-    const distanciaMetros = route.distanceMeters || 0;
-    const tempoComTransitoSeg = route.durationInTraffic ? parseDuration(route.durationInTraffic) : 0;
-    const tempoSemTransitoSeg = route.duration ? parseDuration(route.duration) : 0;
-
-    // Detecta se o Google tem dados reais de trânsito (duração com trânsito diferente da sem trânsito)
-    const temTrafegoReal = tempoComTransitoSeg > 0 && tempoSemTransitoSeg > 0 && tempoComTransitoSeg !== tempoSemTransitoSeg;
-
-    const distanciaKmFinal = distanciaMetros > 0 ? Math.round((distanciaMetros / 1000) * 10) / 10 : Math.round(CFG.transitoDistanciaKm * 10) / 10;
-    const tempoAtualMin = Math.round(tempoComTransitoSeg / 60);
-    const tempoLivreMin = Math.round(tempoSemTransitoSeg / 60);
-
-    // Se não há dados de trânsito real, usa o tempo livre como base (mostra estimativa)
-    const tempoAtualFinal = temTrafegoReal ? tempoAtualMin : tempoLivreMin;
-
-    // Se a API não retornou duração sem trânsito, calcula estimativa
-    const tempoLivreFinal = tempoLivreMin > 0 ? tempoLivreMin : Math.round((distanciaKmFinal / 80) * 60);
-
-    const classificacao = classificarTempoViagem(tempoAtualFinal);
-
-    // Multiplicador para exibição
-    const multiplicador = tempoLivreFinal > 0 ? Number((tempoAtualFinal / tempoLivreFinal).toFixed(2)) : 1;
-
-    // Detalhes dos trechos da rota (para exibição de segmentos)
-    const segmentos = [];
-    const legs = route.legs || [];
-    for (let i = 0; i < Math.min(legs.length, 3); i++) {
-      const leg = legs[i];
-      segmentos.push({
-        ponto: leg.startLocation ? leg.startLocation.latLng.latitude.toFixed(4) + ", " + leg.startLocation.latLng.longitude.toFixed(4) : "",
-        velocidadeAtual: 0,
-        velocidadeLivre: 0,
-        multiplicador: multiplicador,
-        congestionamento: 0,
-        roadClosure: false,
-      });
-    }
-
-    // Se não conseguiu montar segmentos da rota, usa fallback com pontos fixos
-    if (segmentos.length === 0) {
-      segmentos.push(
-        { ponto: "Divisa Alegre", velocidadeAtual: 0, velocidadeLivre: 0, multiplicador: multiplicador, congestionamento: 0, roadClosure: false },
-        { ponto: "BR-116 (trecho médio)", velocidadeAtual: 0, velocidadeLivre: 0, multiplicador: multiplicador, congestionamento: 0, roadClosure: false },
-        { ponto: "Vitória da Conquista", velocidadeAtual: 0, velocidadeLivre: 0, multiplicador: multiplicador, congestionamento: 0, roadClosure: false }
-      );
-    }
-
-    return {
-      ok: true,
-      fonte: temTrafegoReal ? "Google Maps Routes API (trânsito em tempo real)" : "Google Maps Routes API (tempo estimado - sem dados de trânsito em tempo real)",
-      tempoLivreMin: tempoLivreFinal,
-      tempoAtualMin: tempoAtualFinal,
-      temTrafegoReal,
-      multiplicador,
-      classificacao,
-      distanciaKm: distanciaKmFinal,
-      segmentos,
-      incidentes: [],
-      verificadoEm: new Date().toISOString(),
-    };
-
-  } catch (e) {
-    console.warn("[trânsito] Erro no Routes API:", limpar(e.message));
-    return await consultarTransitoFallback();
-  }
-}
-
-/**
- * Converte duração ISO 8601 (ex: "3600s") para segundos
- */
-function parseDuration(isoDuration) {
-  if (!isoDuration) return 0;
-  const match = isoDuration.match(/^(\d+)s$/);
-  return match ? parseInt(match[1], 10) : 0;
-}
-
-/**
- * Fallback: estimativa de distância se a Routes API falhar
- */
-async function consultarTransitoFallback() {
-  if (!CFG.googleMapsKey) {
-    return { ok: false, erro: "GOOGLE_MAPS_API_KEY não configurada no .env" };
-  }
-
-  const distanciaTotalKm = CFG.transitoDistanciaKm > 0 ? CFG.transitoDistanciaKm : 120;
-  const velocidadeMediaLivre = CFG.transitoVelocidadeLivre > 0 ? CFG.transitoVelocidadeLivre : 80;
-  const tempoLivreMin = Math.round((distanciaTotalKm / velocidadeMediaLivre) * 60);
+  const distanciaKm = Number(process.env.TRANSITO_DISTANCIA_KM || 120);
+  const velocidadeLivre = Number(process.env.TRANSITO_VELOCIDADE_LIVRE || 80);
+  const tempoLivreMin = Math.round((distanciaKm / velocidadeLivre) * 60);
 
   const classificacao = classificarTempoViagem(tempoLivreMin);
 
   return {
     ok: true,
-    fonte: "Google Maps Routes API (fallback - estimativa de distância)",
-    tempoLivreMin,
+    fonte: "Estimativa (sem trânsito em tempo real)",
+    tempoLivreMin: tempoLivreMin,
     tempoAtualMin: tempoLivreMin,
     temTrafegoReal: false,
-    multiplicador: 1,
-    classificacao,
-    distanciaKm: distanciaTotalKm,
-    segmentos: [
-      { ponto: "Divisa Alegre", velocidadeAtual: 0, velocidadeLivre: 0, multiplicador: 1, congestionamento: 0, roadClosure: false },
-      { ponto: "BR-116 (trecho médio)", velocidadeAtual: 0, velocidadeLivre: 0, multiplicador: 1, congestionamento: 0, roadClosure: false },
-      { ponto: "Vitória da Conquista", velocidadeAtual: 0, velocidadeLivre: 0, multiplicador: 1, congestionamento: 0, roadClosure: false }
-    ],
-    incidentes: [],
+    classificacao: classificacao,
+    distanciaKm: distanciaKm,
     verificadoEm: new Date().toISOString(),
   };
 }
 
-/**
- * Consulta o TomTom Traffic Incidents API para obras e acidentes na área da rota
- * Retorna lista de incidentes: { tipo, descricao, gravidade, pubMillis, start, end, delay }
- */
-async function consultarIncidentes() {
-  // Google Maps Routes API não retorna incidentes (obras/acidentes) diretamente.
-  // Retorna vazio; o frontend exibe "Sem obras ou acidentes reportados na rota".
-  return [];
+function classificarTempoViagem(minutos) {
+  if (minutos <= 90) return "bom";
+  if (minutos > 120) return "ruim";
+  if (minutos >= 100) return "lento";
+  return "bom";
 }
 
 /**
@@ -404,281 +236,7 @@ async function rotaTransito(req, res) {
 }
 
 /* ------------------------------------------------------------------ */
-/* PARTE 5 - WEB PUSH: VAPID, inscrições com preferências, envio       */
-/* ------------------------------------------------------------------ */
-
-if (CFG.vapidPublicKey && CFG.vapidPrivateKey) {
-  webPush.setVapidDetails(CFG.vapidEmail, CFG.vapidPublicKey, CFG.vapidPrivateKey);
-}
-
-/**
- * POST /api/push/inscrever
- * Body: { endpoint, keys: { p256dh, auth }, preferencias: { categorias:{bom,lento,ruim}, horaIda, horaVolta } }
- */
-async function inscreverPush(req, res) {
-  let corpo = "";
-  req.on("data", c => corpo += c);
-  req.on("end", () => {
-    try {
-      const inscricao = JSON.parse(corpo);
-      if (!inscricao.endpoint || !inscricao.keys?.p256dh || !inscricao.keys?.auth) {
-        return json(res, 400, { ok: false, erro: "Inscrição inválida (faltam endpoint/keys)" });
-      }
-
-      const preferencias = inscricao.preferencias || {
-        categorias: { bom: false, lento: false, ruim: false },
-        horaIda: "06:30",
-        horaVolta: "17:30",
-      };
-
-      inscricoesPush.set(inscricao.endpoint, {
-        inscricao,
-        preferencias,
-      });
-
-      console.log(`[push] Nova inscrição com preferências: ${inscricao.endpoint.slice(0, 50)}... (total: ${inscricoesPush.size})`);
-      return json(res, 201, { ok: true, total: inscricoesPush.size });
-    } catch (e) {
-      return json(res, 400, { ok: false, erro: "JSON inválido" });
-    }
-  });
-}
-
-/**
- * POST /api/push/desinscrever
- * Body: { endpoint }
- */
-async function desinscreverPush(req, res) {
-  let corpo = "";
-  req.on("data", c => corpo += c);
-  req.on("end", () => {
-    try {
-      const { endpoint } = JSON.parse(corpo);
-      const removido = inscricoesPush.delete(endpoint);
-      console.log(`[push] Desinscrito: ${removido} (total: ${inscricoesPush.size})`);
-      return json(res, 200, { ok: true, removido, total: inscricoesPush.size });
-    } catch (e) {
-      return json(res, 400, { ok: false, erro: "JSON inválido" });
-    }
-  });
-}
-
-/**
- * GET /api/push/vapid-public-key
- */
-function obterVapidPublicKey(req, res) {
-  if (!CFG.vapidPublicKey) {
-    return json(res, 503, { ok: false, erro: "VAPID não configurado no servidor" });
-  }
-  return json(res, 200, { ok: true, chavePublica: CFG.vapidPublicKey });
-}
-
-/**
- * Envia notificação push para inscrições que quiserem receber essa categoria
- */
-async function enviarNotificacaoParaCategorias(titulo, corpo, categoriasAlvo, dadosAdicionais = {}) {
-  if (inscricoesPush.size === 0) {
-    console.log("[push] Nenhuma inscrição ativa para notificar");
-    return { enviados: 0, falhas: 0 };
-  }
-
-  const payload = JSON.stringify({ titulo, corpo, ...dadosAdicionais });
-  let enviados = 0, falhas = 0;
-
-  for (const [endpoint, item] of inscricoesPush) {
-    // Só envia se a categoria alvo estiver selecionada pelo usuário
-    const pref = item.preferencias || {};
-    const cat = pref.categorias || {};
-    if (!cat[categoriasAlvo]) continue;
-
-    try {
-      await webPush.sendNotification(item.inscricao, payload);
-      enviados++;
-    } catch (e) {
-      if (e.statusCode === 404 || e.statusCode === 410) {
-        inscricoesPush.delete(endpoint);
-      }
-      falhas++;
-      console.warn("[push] Falha ao enviar:", limpar(e.message));
-    }
-  }
-
-  console.log(`[push] Notificação "${categoriasAlvo}" enviada: ${enviados} ok, ${falhas} falhas`);
-  return { enviados, falhas };
-}
-
-/* ------------------------------------------------------------------ */
-/* PARTE 6 - AGENDADOR: notificações segunda a sexta nos horários      */
-/* ------------------------------------------------------------------ */
-
-/**
- * Retorna verdadeiro se hoje é segunda a sexta
- */
-function ehDiaUtil() {
-  const dia = new Date().getDay(); // 0=domingo, 6=sábado
-  return dia >= 1 && dia <= 5;
-}
-
-/**
- * Verifica se já passou do horário agendado hoje (para não enviar notificação atrasada)
- */
-function jaPassouDoHorario(horaStr) {
-  const agora = new Date();
-  const [h, m] = horaStr.split(":").map(Number);
-  const agendado = new Date();
-  agendado.setHours(h, m, 0, 0);
-  return agora > agendado;
-}
-
-/**
- * Busca o trânsito atual e envia notificação para as categorias selecionadas
- * Se a classificação atual bater com uma categoria selecionada, notifica.
- */
-async function verificarENotificar(tipoViagem, horaStr, categoriaPreferida) {
-  if (!ehDiaUtil()) {
-    console.log(`[agendador] Fim de semana — pulando notificação de ${tipoViagem} às ${horaStr}`);
-    return;
-  }
-
-  if (jaPassouDoHorario(horaStr)) {
-    console.log(`[agendador] Horário ${horaStr} já passou hoje — pulando ${tipoViagem}`);
-    return;
-  }
-
-  const resultado = await consultarTransito();
-  if (!resultado.ok) {
-    console.warn(`[agendador] Falha ao consultar trânsito para ${tipoViagem}:`, resultado.erro);
-    return;
-  }
-
-  const classificacaoAtual = resultado.classificacao; // "bom" | "lento" | "ruim"
-
-  // Só notifica se a classificação atual for a categoria preferida E o usuário selecionou essa categoria
-  if (classificacaoAtual !== categoriaPreferida) {
-    console.log(`[agendador] ${tipoViagem} às ${horaStr}: trânsito ${classificacaoAtual}, não é ${categoriaPreferida} — sem notificação`);
-    return;
-  }
-
-  const atraso = resultado.tempoAtualMin - resultado.tempoLivreMin;
-  const nomesCategoria = {
-    bom: "bom",
-    lento: "lento",
-    ruim: "ruim/parado",
-  };
-
-  const rotas = {
-    ida: "Divisa Alegre → Vitória da Conquista",
-    volta: "Vitória da Conquista → Divisa Alegre",
-  };
-
-  await enviarNotificacaoParaCategorias(
-    `Trânsito ${nomesCategoria[categoriaPreferida]} — ${rotas[tipoViagem]}`,
-    `Saída prevista às ${horaStr}. Tempo de viagem: ~${resultado.tempoAtualMin} min ` +
-    (atraso > 0 ? `(+${atraso} min que o normal)` : "") +
-    `. ${resultado.tempoLivreMin} min em condições normais.`,
-    categoriaPreferida,
-    {
-      tipo: "notificacao_agendada",
-      viagem: tipoViagem,
-      hora: horaStr,
-      classificacao: resultado.classificacao,
-      tempoAtualMin: resultado.tempoAtualMin,
-      tempoLivreMin: resultado.tempoLivreMin,
-      atraso,
-    }
-  );
-}
-
-/**
- * Inicia os agendadores de ida e volta (segunda a sexta)
- */
-function iniciarAgendadorNotificacoes() {
-  if (!CFG.googleMapsKey) {
-    console.log("[agendador] GOOGLE_MAPS_API_KEY não configurada — notificações DESATIVADAS");
-    return;
-  }
-  if (!CFG.vapidPublicKey || !CFG.vapidPrivateKey) {
-    console.log("[agendador] Chaves VAPID não configuradas — notificações push DESATIVADAS");
-  }
-
-  // Função para ler preferências atuais e agendar dinamicamente
-  function agendarComPreferenciasAtuais() {
-    // Para cada inscrição, lê os horários e categorias preferidas
-    // Agendamos verificações em todos os horários possíveis (00:00 a 23:59) de minuto em minuto
-    // mas só enviamos se o horário bater com o preferido de alguém e a categoria corresponder.
-    // Simplificado: verificamos a cada minuto se alguma inscrição tem notificação agendada para esse exato minuto.
-
-    schedule.scheduleJob("* * * * 1-5", async function () {
-      // Roda todo minuto, segunda a sexta
-      if (!ehDiaUtil()) return;
-
-      const agora = new Date();
-      const horaAtual = agora.getHours().toString().padStart(2, "0") + ":" + agora.getMinutes().toString().padStart(2, "0");
-
-      for (const [endpoint, item] of inscricoesPush) {
-        const pref = item.preferencias || {};
-        const categorias = pref.categorias || {};
-        const horaIda = pref.horaIda || "06:30";
-        const horaVolta = pref.horaVolta || "17:30";
-
-        // Verifica ida
-        if (horaAtual === horaIda) {
-          // Envia para a categoria que corresponde ao trânsito atual (se selecionada)
-          // Como não sabemos o trânsito ainda, consultamos e enviamos para todas categorias selecionadas
-          // que baterem com o resultado
-          const resultado = await consultarTransito();
-          if (!resultado.ok) continue;
-
-          const classificacao = resultado.classificacao;
-          if (categorias[classificacao]) {
-            await enviarNotificacaoParaCategorias(
-              `Lembrete: Saída para Vitória da Conquista`,
-              `Hora da saída (${horaIda}). Trânsito ${classificacao}. Tempo estimado: ~${resultado.tempoAtualMin} min.`,
-              classificacao,
-              { tipo: "lembrete_saida", viagem: "ida", hora: horaIda, classificacao }
-            );
-          }
-        }
-
-        // Verifica volta
-        if (horaAtual === horaVolta) {
-          const resultado = await consultarTransito();
-          if (!resultado.ok) continue;
-
-          const classificacao = resultado.classificacao;
-          if (categorias[classificacao]) {
-            await enviarNotificacaoParaCategorias(
-              `Lembrete: Saída para Divisa Alegre`,
-              `Hora da saída (${horaVolta}). Trânsito ${classificacao}. Tempo estimado: ~${resultado.tempoAtualMin} min.`,
-              classificacao,
-              { tipo: "lembrete_saida", viagem: "volta", hora: horaVolta, classificacao }
-            );
-          }
-        }
-      }
-    });
-
-    console.log("[agendador] Notificações agendadas: segunda a sexta, verificação a cada minuto");
-  }
-
-  agendarComPreferenciasAtuais();
-
-  // Verificação imediata na inicialização (útil pra testar)
-  setTimeout(async () => {
-    const resultado = await consultarTransito();
-    if (resultado.ok) {
-      console.log(`[inicialização] Trânsito atual: ${resultado.tempoAtualMin} min (${resultado.classificacao})`);
-    }
-  }, 3000);
-}
-
-function pararAgendador() {
-  schedule.cancelJobs();
-  console.log("[agendador] Todos os jobs cancelados");
-}
-
-/* ------------------------------------------------------------------ */
-/* PARTE 7 - ARQUIVOS ESTÁTICOS: servirEstatico()                      */
+/* PARTE 5 - ARQUIVOS ESTÁTICOS: servirEstatico()                      */
 /* ------------------------------------------------------------------ */
 function servirEstatico(req, res, caminhoUrl) {
   let rel = decodeURIComponent(caminhoUrl.split("?")[0]);
@@ -705,7 +263,7 @@ function servirEstatico(req, res, caminhoUrl) {
 }
 
 /* ------------------------------------------------------------------ */
-/* PARTE 8 - SERVIDOR: rotas /api/... e inicialização                 */
+/* PARTE 6 - SERVIDOR: rotas /api/... e inicialização                 */
 /* ------------------------------------------------------------------ */
 const servidor = http.createServer(async (req, res) => {
   const ip = (req.headers["x-forwarded-for"] || req.socket.remoteAddress || "?").toString().split(",")[0].trim();
@@ -725,10 +283,8 @@ const servidor = http.createServer(async (req, res) => {
         ok: true,
         integracoes: {
           clima: "Open-Meteo (sem chave)",
-          transito: CFG.googleMapsKey ? "Google Maps Routes API" : "Não configurado",
-          push: (CFG.vapidPublicKey && CFG.vapidPrivateKey) ? "VAPID configurado" : "Não configurado",
+          transito: "Estimativa local (sem API externa)",
         },
-        inscricoesPush: inscricoesPush.size,
       });
     }
 
@@ -745,18 +301,6 @@ const servidor = http.createServer(async (req, res) => {
       return await rotaTransito(req, res);
     }
 
-    if (url.pathname === "/api/push/vapid-public-key" && req.method === "GET") {
-      return obterVapidPublicKey(req, res);
-    }
-
-    if (url.pathname === "/api/push/inscrever" && req.method === "POST") {
-      return await inscreverPush(req, res);
-    }
-
-    if (url.pathname === "/api/push/desinscrever" && req.method === "POST") {
-      return await desinscreverPush(req, res);
-    }
-
     return json(res, 404, { ok: false, erro: "Endpoint não encontrado." });
   }
 
@@ -767,19 +311,14 @@ const servidor = http.createServer(async (req, res) => {
   servirEstatico(req, res, url.pathname);
 });
 
-// Inicia agendador de notificações
-iniciarAgendadorNotificacoes();
-
 // Graceful shutdown
 process.on("SIGINT", () => {
   console.log("\n[servidor] Encerrando...");
-  pararAgendador();
   servidor.close(() => process.exit(0));
 });
 
 servidor.listen(CFG.porta, "0.0.0.0", () => {
   console.log(`Site no ar em http://0.0.0.0:${CFG.porta}`);
-  console.log(`  Clima  : Open-Meteo (${CFG.climaCidade})`);
-  console.log(`  Trânsito: ${CFG.googleMapsKey ? "Google Maps Routes API" : "Não configurado (defina GOOGLE_MAPS_API_KEY no .env)"}`);
-  console.log(`  Push   : ${(CFG.vapidPublicKey && CFG.vapidPrivateKey) ? "VAPID pronto (notificações segunda a sexta)" : "Não configurado"}`);
+  console.log(`  Clima   : Open-Meteo (${CFG.climaCidade})`);
+  console.log(`  Trânsito: Estimativa local (sem API externa)`);
 });
