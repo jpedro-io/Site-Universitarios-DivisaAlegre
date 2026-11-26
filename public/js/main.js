@@ -170,21 +170,11 @@
         const chegada = new Date(Date.now() + tempoAtual * 60 * 1000);
 
         cxTempoViagem.innerHTML = `
-          <div style="text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; margin-bottom: 16px;">
-            <p style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #fff;">Tempo de viagem</p>
-            <p style="margin: 0; font-size: 0.85rem; color: rgba(255,255,255,0.7);">Divisa Alegre → Vitória da Conquista</p>
+          <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span style="font-size: 1.1rem; font-weight: 800; color: ${classificacao.cor};">${tempoAtual} min</span>
+            <span style="font-size: 0.75rem; font-weight: 500; color: rgba(255,255,255,0.8);">agora</span>
           </div>
-
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-            <div style="display: flex; align-items: baseline; gap: 6px;">
-              <span style="font-size: 2rem; font-weight: 800; line-height: 1; color: ${classificacao.cor};">${tempoAtual} min</span>
-              <span style="font-size: 0.85rem; font-weight: 500; color: rgba(255,255,255,0.8);">agora</span>
-            </div>
-          </div>
-
-          <p style="margin: 12px 0 0; font-size: 0.8rem; font-weight: 700; color: ${classificacao.cor}; text-transform: uppercase;">${classificacao.texto}</p>
-
-          <p style="margin: 10px 0 0; font-size: 0.65rem; color: rgba(255,255,255,0.4);">Atualizado: ${horaLocal(d.verificadoEm)} · Fonte: ${d.fonte || "Google Maps"}</p>
+          <p style="margin: 4px 0 0; font-size: 0.7rem; font-weight: 700; color: ${classificacao.cor}; text-transform: uppercase;">${classificacao.texto}</p>
         `;
 
         // Armazena o tempo atual para uso nas notificações
