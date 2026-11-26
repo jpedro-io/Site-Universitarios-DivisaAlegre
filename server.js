@@ -265,7 +265,13 @@ function servirEstatico(req, res, caminhoUrl) {
 /* ------------------------------------------------------------------ */
 /* PARTE 6 - SERVIDOR: rotas /api/... e inicialização                 */
 /* ------------------------------------------------------------------ */
-const servidor = http.createServer(async (req, res) => {
+
+/**
+ * Handler de requisições HTTP.
+ * Funciona tanto com node http.createServer (execucao local) quanto
+ * com o handler do Vercel (@vercel/node).
+ */
+async function handleRequest(req, res) {
   const ip = (req.headers["x-forwarded-for"] || req.socket.remoteAddress || "?").toString().split(",")[0].trim();
   const url = new URL(req.url, "http://" + (req.headers.host || "localhost"));
 
@@ -309,7 +315,9 @@ const servidor = http.createServer(async (req, res) => {
   }
 
   servirEstatico(req, res, url.pathname);
-});
+}
+
+const servidor = http.createServer(handleRequest);
 
 // Graceful shutdown
 process.on("SIGINT", () => {
@@ -317,8 +325,14 @@ process.on("SIGINT", () => {
   servidor.close(() => process.exit(0));
 });
 
-servidor.listen(CFG.porta, "0.0.0.0", () => {
-  console.log(`Site no ar em http://0.0.0.0:${CFG.porta}`);
-  console.log(`  Clima   : Open-Meteo (${CFG.climaCidade})`);
-  console.log(`  Trânsito: Estimativa local (sem API externa)`);
-});
+// Execucao local: escuta na porta apenas quando rodado diretamente
+if (require.main === module) {
+  servidor.listen(CFG.porta, "0.0.0.0", () => {
+    console.log(`Site no ar em http://0.0.0.0:${CFG.porta}`);
+    console.log(`  Clima   : Open-Meteo (${CFG.climaCidade})`);
+    console.log(`  Trânsito: Estimativa local (sem API externa)`);
+  });
+}
+
+// Exporta o handler para o Vercel (@vercel/node)
+module.exports = handleRequest;
