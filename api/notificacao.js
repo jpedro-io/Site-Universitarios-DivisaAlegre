@@ -4,6 +4,7 @@
  *
  * GET  /api/notificacao   -> retorna a chave pública VAPID
  * POST /api/notificacao   -> registra uma inscrição (PushSubscription)
+ * DELETE /api/notificacao -> cancela uma inscrição (envia { endpoint, tipo })
  */
 
 const { WebPush } = require("web-push");
@@ -23,7 +24,7 @@ const webpush = new WebPush({
 module.exports = async (req, res) => {
   // Permite CORS apenas do próprio domínio em produção
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") {
@@ -48,6 +49,20 @@ module.exports = async (req, res) => {
       }
 
       return res.status(201).json({ ok: true, total: inscricoes.length });
+    } catch (e) {
+      return res.status(500).json({ ok: false, erro: e.message });
+    }
+  }
+
+  if (req.method === "DELETE") {
+    try {
+      const { endpoint } = req.body || {};
+      if (!endpoint) {
+        return res.status(400).json({ ok: false, erro: "Endpoint não informado." });
+      }
+      const antes = inscricoes.length;
+      inscricoes = inscricoes.filter((i) => i.endpoint !== endpoint);
+      return res.status(200).json({ ok: true, removidos: antes - inscricoes.length, total: inscricoes.length });
     } catch (e) {
       return res.status(500).json({ ok: false, erro: e.message });
     }

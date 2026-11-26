@@ -42,7 +42,7 @@
     margin: 0;
     font-family: var(--fonte-texto);
     color: var(--texto);
-    background: var(--fundo);
+    background: var(--fundo-suave);
     line-height: 1.6;
     font-size: 1rem;
     color-scheme: light;
@@ -403,9 +403,17 @@
     font-size: 0.95rem;
     cursor: pointer;
     transition: background var(--transicao), border-color var(--transicao);
+    position: relative;
+    overflow: hidden;
   }
   .notificacoes button:hover { background: var(--fundo-suave); border-color: var(--azul-royal); }
   .notificacoes button:active { background: rgba(10, 20, 54, 0.05); }
+  .notificacoes button.ativo {
+    background: var(--azul-royal);
+    color: var(--branco);
+    border-color: var(--azul-royal);
+  }
+  .notificacoes button.ativo:hover { background: #16328a; border-color: #16328a; }
   .notificacoes button.secondary {
     background: var(--branco);
     color: var(--texto);
@@ -1027,7 +1035,7 @@
     const btnLista = document.getElementById("btn-notif-lista");
     const btnTransito = document.getElementById("btn-notif-transito");
 
-    async function inicializarNotificacoes() {
+    async function inicializarNotificacoes(tipo) {
       if (!("serviceWorker" in navigator)) return;
       if (!("PushManager" in window)) return;
 
@@ -1035,6 +1043,7 @@
         await navigator.serviceWorker.register("/sw.js");
       } catch (e) {
         console.warn("[sw] falhou ao registrar:", e);
+        return;
       }
 
       const permissao = await Notification.requestPermission();
@@ -1043,7 +1052,6 @@
       try {
         const registro = await navigator.serviceWorker.ready;
 
-        // Busca a chave pública VAPID do servidor
         const r = await fetch("/api/notificacao", { headers: { Accept: "application/json" } });
         const dados = await r.json();
         const chavePublica = dados.publicKey;
@@ -1055,14 +1063,31 @@
           applicationServerKey: aplicacaoServidor,
         });
 
-        // Envia a inscrição para o servidor
         await fetch("/api/notificacao", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(inscricao),
+          body: JSON.stringify({ ...inscricao, tipo: tipo || "geral" }),
         });
       } catch (e) {
         console.warn("[push] falhou ao inscrever:", e);
+      }
+    }
+
+    async function cancelarNotificacao(tipo) {
+      if (!("serviceWorker" in navigator)) return;
+      try {
+        const registro = await navigator.serviceWorker.ready;
+        const inscricao = await registro.pushManager.getSubscription();
+        if (inscricao) {
+          await inscricao.unsubscribe();
+          await fetch("/api/notificacao", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ endpoint: inscricao.endpoint, tipo: tipo || "geral" }),
+          });
+        }
+      } catch (e) {
+        console.warn("[push] falhou ao cancelar:", e);
       }
     }
 
@@ -1079,15 +1104,27 @@
 
     if (btnLista) {
       btnLista.addEventListener("click", async function () {
-        await inicializarNotificacoes();
-        alert("Notificação de lista ativada! Você receberá um aviso diário às 10h.");
+        const ativo = btnLista.classList.toggle("ativo");
+        if (ativo) {
+          await inicializarNotificacoes("lista");
+          btnLista.textContent = "Notificação de lista (ativa)";
+        } else {
+          await cancelarNotificacao("lista");
+          btnLista.textContent = "Notificação de lista";
+        }
       });
     }
 
     if (btnTransito) {
       btnTransito.addEventListener("click", async function () {
-        await inicializarNotificacoes();
-        alert("Notificação de Trânsito ativada! Você receberá um aviso diário às 15h.");
+        const ativo = btnTransito.classList.toggle("ativo");
+        if (ativo) {
+          await inicializarNotificacoes("transito");
+          btnTransito.textContent = "Notificação de Trânsito (ativa)";
+        } else {
+          await cancelarNotificacao("transito");
+          btnTransito.textContent = "Notificação de Trânsito";
+        }
       });
     }
 
