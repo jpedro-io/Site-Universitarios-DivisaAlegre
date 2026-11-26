@@ -1,33 +1,404 @@
 <!DOCTYPE html>
-
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="light">
 <head>
-
-<!-- ============ PARTE 1: <head> ============ -->
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
 <title>Universidades · Transporte dos Universitários de Divisa Alegre</title>
 <meta name="description" content="Principais universidades atendidas pelo transporte universitário de Divisa Alegre - MG, em Vitória da Conquista (BA).">
-<meta name="theme-color" content="#0a1436">
+<meta name="theme-color" content="#ffffff">
 <link rel="icon" href="img/favicon.png">
-<link rel="stylesheet" href="css/style.css">
-<!-- ============ FIM DA PARTE 1 ============ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* =========================================================================
+     UNIVERSIDADES — DESIGN LIQUID GLASS
+     ========================================================================= */
+  :root {
+    --azul-royal: #1b3aa0;
+    --azul-escuro: #0a1436;
+    --azul-profundo: #0f1a3a;
+    --fundo: #ffffff;
+    --fundo-suave: #f4f6fb;
+    --branco: #ffffff;
+    --vidro: rgba(255, 255, 255, 0.72);
+    --vidro-suave: rgba(255, 255, 255, 0.55);
+    --borda-vidro: rgba(10, 20, 54, 0.18);
+    --borda-vidro-fraco: rgba(10, 20, 54, 0.10);
+    --sombra-vidro: 0 20px 50px rgba(10, 20, 54, 0.12);
+    --texto: #0a1436;
+    --texto-fraco: #5b6b8f;
+    --texto-suave: #1e2a4a;
+    --raio: 22px;
+    --raio-menor: 14px;
+    --pill: 999px;
+    --transicao: 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+    --fonte-titulo: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --fonte-texto: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: var(--fonte-texto);
+    color: var(--texto);
+    background: var(--fundo);
+    line-height: 1.6;
+    font-size: 11pt;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    color-scheme: light;
+    overflow-x: hidden;
+  }
+  ::selection { background: var(--azul-royal); color: var(--branco); }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--fundo-suave); }
+  ::-webkit-scrollbar-thumb { background: var(--borda-vidro); border-radius: 6px; border: 3px solid var(--fundo-suave); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--azul-escuro); }
+  h1, h2, h3, h4 { font-family: var(--fonte-titulo); margin: 0 0 0.7rem; line-height: 1.12; letter-spacing: -0.02em; }
+  p { margin: 0 0 1rem; }
+  a { color: var(--azul-royal); text-decoration: none; }
+  strong { font-weight: 800; }
+  img { display: block; max-width: 100%; }
+
+  /* ============================ CABECALHO ============================ */
+  .cabecalho {
+    position: fixed;
+    inset: env(safe-area-inset-top, 0px) 0 auto 0;
+    z-index: 60;
+    background: rgba(10, 20, 54, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(27, 58, 160, 0.35);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.30);
+    display: flex;
+    align-items: center;
+    padding: 0 max(16px, env(safe-area-inset-left, 0px));
+  }
+  .cabecalho__interno {
+    width: min(1140px, 100% - 2rem);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 0 auto;
+  }
+  .cabecalho__logo { display: inline-flex; align-items: center; }
+  .cabecalho__logo img { height: 52px; width: auto; }
+  .cabecalho__marca {
+    font-family: var(--fonte-titulo);
+    font-weight: 800;
+    font-size: 1rem;
+    letter-spacing: -0.01em;
+    color: var(--texto);
+  }
+
+  .menu-botao {
+    position: absolute;
+    left: max(16px, env(safe-area-inset-left, 0px));
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--borda-vidro);
+    border-radius: 12px;
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.3s ease, border-color 0.3s ease;
+  }
+  .menu-botao:hover { background: rgba(255, 255, 255, 0.12); }
+  .menu-botao:focus-visible { outline: 2px solid var(--branco); outline-offset: 3px; }
+  .menu-botao span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--branco);
+    transition: transform 0.3s ease, opacity 0.25s ease;
+  }
+  body.menu-aberto .menu-botao span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  body.menu-aberto .menu-botao span:nth-child(2) { opacity: 0; }
+  body.menu-aberto .menu-botao span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ============================ MENU LATERAL ============================ */
+  .menu {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(320px, 88vw);
+    background: #0a1436;
+    z-index: 70;
+    transform: translateX(-102%);
+    transition: transform var(--transicao);
+    padding: calc(60px + 26px) 26px 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-shadow: 4px 0 30px rgba(0, 0, 0, 0.45);
+    border-right: 1px solid rgba(27, 58, 160, 0.25);
+  }
+  body.menu-aberto .menu { transform: translateX(0); }
+  .menu__titulo {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    font-weight: 800;
+    margin-bottom: 12px;
+  }
+  .menu a {
+    color: var(--branco);
+    text-decoration: none;
+    font-size: 1rem;
+    padding: 12px 16px;
+    border-radius: var(--raio-menor);
+    border-left: 3px solid transparent;
+    transition: background 0.3s ease, border-color 0.3s ease, padding-left 0.3s ease;
+    display: block;
+  }
+  .menu a:hover { background: rgba(255, 255, 255, 0.08); padding-left: 22px; }
+  .menu a.ativo {
+    background: rgba(255, 255, 255, 0.10);
+    border-left-color: var(--azul-royal);
+    font-weight: 700;
+    color: var(--branco);
+  }
+  .menu__rodape {
+    margin-top: auto;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.76rem;
+    line-height: 1.5;
+  }
+  .menu__rodape img { height: 72px; width: auto; margin-bottom: 10px; }
+  .fundo-menu {
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 8, 24, 0.60);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transicao);
+    z-index: 65;
+  }
+  body.menu-aberto .fundo-menu { opacity: 1; pointer-events: auto; }
+
+  /* ============================ FAIXA ============================ */
+  .faixa {
+    position: relative;
+    margin-top: 64px;
+    padding: clamp(56px, 7vw, 100px) 0 clamp(44px, 6vw, 72px);
+    background: var(--azul-royal);
+    color: var(--branco);
+    text-align: center;
+    overflow: hidden;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  }
+  .faixa__conteudo {
+    position: relative;
+    z-index: 2;
+    width: min(880px, 92%);
+    margin: 0 auto;
+    opacity: 0;
+    animation: entrarHero 1s cubic-bezier(0.23, 1, 0.32, 1) 0.2s both;
+  }
+  @keyframes entrarHero {
+    from { opacity: 0; transform: translateY(22px); }
+    to { opacity: 1; transform: none; }
+  }
+  .faixa h1 { font-size: clamp(1.9rem, 1.2rem + 3vw, 3rem); margin-bottom: 10px; color: var(--branco); }
+  .faixa p { color: rgba(255, 255, 255, 0.92); max-width: 60ch; margin: 0 auto; font-size: 1rem; }
+
+  /* ============================ CONTEUDO ============================ */
+  .secao {
+    padding: clamp(52px, 6vw, 86px) 0;
+    position: relative;
+  }
+  .secao__wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 max(16px, env(safe-area-inset-left, 0px));
+    width: 100%;
+  }
+  .secao__etiqueta {
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    font-weight: 800;
+    color: var(--texto-fraco);
+    margin-bottom: 8px;
+    display: inline-block;
+  }
+  .secao__titulo {
+    font-size: clamp(1.4rem, 1rem + 1.6vw, 2.2rem);
+    color: var(--texto);
+    margin-bottom: 8px;
+  }
+  .secao__subtitulo {
+    color: var(--texto-suave);
+    margin-bottom: 30px;
+    max-width: 60ch;
+    font-size: 0.95rem;
+  }
+
+  /* Universidades — cards com fotos reais */
+  .grade-universidades {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  .universidade {
+    background: var(--vidro);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid var(--borda-vidro);
+    border-radius: var(--raio);
+    overflow: hidden;
+    box-shadow: var(--sombra-vidro);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.4s ease, border-color 0.4s ease;
+  }
+  .universidade:hover { transform: translateY(-6px); border-color: rgba(10, 20, 54, 0.35); }
+  .universidade__foto {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    background: var(--fundo-suave);
+  }
+  .universidade__foto img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.9s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  .universidade:hover .universidade__foto img { transform: scale(1.05); }
+  .universidade__foto::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(10, 20, 54, 0.08), rgba(10, 20, 54, 0.45));
+  }
+  .universidade__sigla {
+    position: absolute;
+    left: 16px;
+    bottom: 14px;
+    z-index: 2;
+    color: var(--branco);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 800;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
+    background: rgba(10, 20, 54, 0.80);
+    padding: 4px 10px;
+    border-radius: 6px;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+  }
+  .universidade__corpo {
+    padding: 20px 22px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+  }
+  .universidade__nome { font-size: 1.08rem; color: var(--texto); margin: 0; }
+  .dados { margin: 0; display: grid; gap: 8px; }
+  .dados div { display: grid; grid-template-columns: 80px 1fr; gap: 8px; align-items: baseline; }
+  .dados dt {
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--texto-fraco);
+    font-weight: 800;
+  }
+  .dados dd { margin: 0; font-size: 0.9rem; color: var(--texto-suave); }
+
+  /* ============================ RODAPE ============================ */
+  .rodape {
+    background: var(--azul-escuro);
+    color: var(--branco);
+    padding: 22px 0 18px;
+    text-align: center;
+    border-top: none;
+    margin-top: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .rodape img { height: 32px; width: auto; margin: 0; }
+  .rodape nav { display: flex; gap: 8px 18px; justify-content: center; flex-wrap: wrap; margin: 0; }
+  .rodape nav a { color: var(--branco); text-decoration: none; font-size: 0.9rem; opacity: 0.9; }
+  .rodape nav a:hover { color: var(--branco); text-decoration: underline; opacity: 1; }
+  .rodape small { display: block; font-size: 0.72rem; color: rgba(255,255,255,0.7); margin: 0; }
+
+  /* ============================ TRANSICAO ============================ */
+  .transicao {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    pointer-events: none;
+    background: linear-gradient(135deg, var(--fundo-suave), var(--branco));
+    opacity: 0;
+    transition: opacity 0.32s ease;
+  }
+  body.saindo .transicao { opacity: 1; }
+
+  /* ============================ MOBILE ============================ */
+  @media (max-width: 720px) {
+    body { padding-block: 24px; }
+    .cabecalho__marca { font-size: 0.9rem; }
+    .cabecalho__logo img { height: 42px; }
+    .secao { padding: clamp(40px, 5vw, 64px) 0; }
+    .faixa { margin-top: 0; padding: clamp(44px, 6vw, 72px) 0 clamp(36px, 5vw, 56px); }
+    .universidade__foto { aspect-ratio: 16 / 9; }
+    .dados div { grid-template-columns: 1fr; gap: 2px; }
+    .dados dt { text-align: left; }
+    .dados dd { text-align: left; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition-duration: 0.01s !important; }
+    .faixa__conteudo { opacity: 1; transform: none; }
+    body { opacity: 1; }
+  }
+
+  /* ============================ ANIMACOES AMBIENTE ============================ */
+  @keyframes respirar {
+    0%, 100% { box-shadow: var(--sombra-vidro); transform: translateY(0); }
+    50% { box-shadow: 0 28px 60px rgba(10, 20, 54, 0.18); transform: translateY(-4px); }
+  }
+  .universidade { animation: respirar 5s ease-in-out infinite; }
+
+  @keyframes pulsoNotif {
+    0% { box-shadow: 0 14px 40px rgba(10, 20, 54, 0.18); }
+    50% { box-shadow: 0 14px 40px rgba(27, 58, 160, 0.30); }
+    100% { box-shadow: 0 14px 40px rgba(10, 20, 54, 0.18); }
+  }
+</style>
 </head>
 <body>
 
-<!-- ============ PARTE 2: CABECALHO ============ -->
+<!-- CABECALHO -->
 <header class="cabecalho">
   <button class="menu-botao" aria-label="Abrir menu de navegação" aria-controls="menu-principal" aria-expanded="false">
     <span></span><span></span><span></span>
   </button>
-  <a class="cabecalho__logo" href="index.html" aria-label="Página inicial">
-    <img src="img/logo-contorno.png" alt="Comissão de Transporte dos Universitários de Divisa Alegre - MG">
-  </a>
-  <a class="cabecalho__voltar" href="index.html">Início</a>
+  <div class="cabecalho__interno">
+    <a class="cabecalho__logo" href="index.html" aria-label="Página inicial">
+      <img src="img/logo-contorno.png" alt="Comissão de Transporte dos Universitários de Divisa Alegre - MG">
+    </a>
+    <div class="cabecalho__marca">Comissão de Transporte dos Universitários de Divisa Alegre - MG</div>
+  </div>
 </header>
-<!-- ============ FIM DA PARTE 2 ============ -->
 
-<!-- ============ PARTE 3: MENU LATERAL ============ -->
+<!-- MENU LATERAL -->
 <nav class="menu" id="menu-principal" aria-label="Menu principal">
   <p class="menu__titulo">Navegação</p>
   <a href="index.html">Página inicial</a>
@@ -40,41 +411,34 @@
   </div>
 </nav>
 <button class="fundo-menu" aria-label="Fechar menu" tabindex="-1"></button>
-<!-- ============ FIM DA PARTE 3 ============ -->
 
 <main>
 
-  <!-- ============ PARTE 4: TITULO DA PAGINA ============ -->
+  <!-- FAIXA -->
   <section class="faixa">
-    <div class="container">
+    <div class="faixa__conteudo">
       <h1>Universidades</h1>
       <p>As principais instituições atendidas pelo transporte, todas em Vitória da Conquista (BA).</p>
     </div>
   </section>
-  <!-- ============ FIM DA PARTE 4 ============ -->
 
   <section class="secao">
-    <div class="container">
+    <div class="secao__wrap">
 
-      <div class="revelar">
-        <span class="secao__etiqueta">Instituições atendidas</span>
-        <h2 class="secao__titulo">Onde nossos universitários estudam</h2>
-        <p class="secao__subtitulo">Endereço, ano de fundação em Vitória da Conquista e principais cursos de cada instituição.</p>
-      </div>
+      <div class="secao__etiqueta">Instituições atendidas</div>
+      <h2 class="secao__titulo">Onde nossos universitários estudam</h2>
+      <p class="secao__subtitulo">Endereço, ano de fundação em Vitória da Conquista e principais cursos de cada instituição.</p>
 
-      <!-- ============ PARTE 5: CARTOES DAS FACULDADES ============ -->
-      <!-- A grade de cartoes e controlada pela classe "grade-universidades" (css/style.css, SECAO 8) -->
       <div class="grade-universidades">
 
         <!-- ===== CARD 1 de 7: FACULDADE ANHANGUERA ===== -->
-        <article class="universidade revelar">
+        <article class="universidade">
           <div class="universidade__foto">
             <img src="img/anhanguera.jpg" alt="Fachada da Faculdade Anhanguera em Vitória da Conquista" loading="lazy">
             <span class="universidade__sigla">Anhanguera</span>
           </div>
           <div class="universidade__corpo">
             <h3 class="universidade__nome">Faculdade Anhanguera</h3>
-            <!-- Cada linha abaixo e um dado: <dt> e o rotulo, <dd> e o texto -->
             <dl class="dados">
               <div><dt>Endereço</dt><dd>Av. José Pedral Sampaio, 1000, Bairro Candeias.</dd></div>
               <div><dt>Fundação</dt><dd>2018, em Vitória da Conquista.</dd></div>
@@ -84,7 +448,7 @@
         </article>
 
         <!-- ===== CARD 2 de 7: IFBA ===== -->
-        <article class="universidade revelar">
+        <article class="universidade">
           <div class="universidade__foto">
             <img src="img/ifba.jpg" alt="Entrada do Instituto Federal da Bahia, campus Vitória da Conquista" loading="lazy">
             <span class="universidade__sigla">IFBA</span>
@@ -100,7 +464,7 @@
         </article>
 
         <!-- ===== CARD 3 de 7: UNEX ===== -->
-        <article class="universidade revelar">
+        <article class="universidade">
           <div class="universidade__foto">
             <img src="img/unex.jpg" alt="Fachada do Centro Universitário de Excelência (UNEX)" loading="lazy">
             <span class="universidade__sigla">UNEX</span>
@@ -116,7 +480,7 @@
         </article>
 
         <!-- ===== CARD 4 de 7: UNOPAR ===== -->
-        <article class="universidade revelar">
+        <article class="universidade">
           <div class="universidade__foto">
             <img src="img/unopar.jpg" alt="Entrada da Unopar em Vitória da Conquista" loading="lazy">
             <span class="universidade__sigla">Unopar</span>
@@ -132,7 +496,7 @@
         </article>
 
         <!-- ===== CARD 5 de 7: FAINOR ===== -->
-        <article class="universidade revelar">
+        <article class="universidade">
           <div class="universidade__foto">
             <img src="img/fainor.jpg" alt="Fachada da Faculdade Independente do Nordeste (FAINOR)" loading="lazy">
             <span class="universidade__sigla">FAINOR</span>
@@ -148,7 +512,7 @@
         </article>
 
         <!-- ===== CARD 6 de 7: FASA / UNINASSAU ===== -->
-        <article class="universidade revelar">
+        <article class="universidade">
           <div class="universidade__foto">
             <img src="img/fasa-uninassau.jpg" alt="Fachada do Shopping Boulevard, unidade FASA / UNINASSAU" loading="lazy">
             <span class="universidade__sigla">FASA / UNINASSAU</span>
@@ -164,7 +528,7 @@
         </article>
 
         <!-- ===== CARD 7 de 7: UESB ===== -->
-        <article class="universidade revelar">
+        <article class="universidade">
           <div class="universidade__foto">
             <img src="img/uesb.jpg" alt="Portaria da Universidade Estadual do Sudoeste da Bahia (UESB)" loading="lazy">
             <span class="universidade__sigla">UESB</span>
@@ -179,31 +543,59 @@
           </div>
         </article>
 
-        <!-- ===== COLE AQUI UMA FACULDADE NOVA (copie um <article> inteiro acima) ===== -->
-
       </div>
-      <!-- ============ FIM DA PARTE 5 ============ -->
 
     </div>
   </section>
+
 </main>
 
-<!-- ============ PARTE 6: RODAPE ============ -->
+<!-- RODAPE -->
 <footer class="rodape">
-  <div class="container">
-    <img src="img/logo-contorno.png" alt="Comissão de Transporte dos Universitários de Divisa Alegre - MG">
-    <nav aria-label="Rodapé">
-      <a href="index.html">Página inicial</a>
-      <a href="regras.html">Regras e Critérios</a>
-      <a href="universidades.html">Universidades</a>
-      <a href="manual.html">Manual dos Universitários</a>
-    </nav>
-    <small>Comissão de Transporte dos Universitários de Divisa Alegre - MG · <span data-ano></span></small>
-  </div>
+  <img src="img/logo-contorno.png" alt="Comissão de Transporte dos Universitários de Divisa Alegre - MG">
+  <nav aria-label="Rodapé">
+    <a href="index.html">Página inicial</a>
+    <a href="regras.html">Regras e Critérios</a>
+    <a href="universidades.html">Universidades</a>
+    <a href="manual.html">Manual dos Universitários</a>
+  </nav>
+  <small>Comissão de Transporte dos Universitários de Divisa Alegre - MG · <span data-ano></span></small>
 </footer>
-<!-- ============ FIM DA PARTE 6 ============ -->
 
 <div class="transicao" aria-hidden="true"></div>
-<script src="js/main.js"></script>
+<script>
+  (function () {
+    "use strict";
+
+    const botaoMenu = document.querySelector(".menu-botao");
+    const fundoMenu = document.querySelector(".fundo-menu");
+    function fecharMenu() { document.body.classList.remove("menu-aberto"); }
+    function alternarMenu() { document.body.classList.toggle("menu-aberto"); }
+    if (botaoMenu) {
+      botaoMenu.addEventListener("click", alternarMenu);
+      botaoMenu.setAttribute("aria-expanded", "false");
+    }
+    if (fundoMenu) fundoMenu.addEventListener("click", fecharMenu);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") fecharMenu(); });
+
+    document.addEventListener("click", function (e) {
+      const a = e.target.closest("a");
+      if (!a) return;
+      const href = a.getAttribute("href") || "";
+      const externo = a.target === "_blank" || /^(https?:|mailto:|tel:|#)/i.test(href);
+      if (externo || !/\.html$/i.test(href)) return;
+      e.preventDefault();
+      fecharMenu();
+      document.body.classList.add("saindo");
+      setTimeout(function () { window.location.href = href; }, 260);
+    });
+    window.addEventListener("pageshow", function () { document.body.classList.remove("saindo"); });
+    setTimeout(function () { document.body.classList.add("pronto"); }, 40);
+
+    document.querySelectorAll("[data-ano]").forEach(function (el) {
+      el.textContent = new Date().getFullYear();
+    });
+  })();
+</script>
 </body>
 </html>

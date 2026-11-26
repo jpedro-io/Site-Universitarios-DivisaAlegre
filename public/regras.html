@@ -1,34 +1,431 @@
 <!DOCTYPE html>
-
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="light">
 <head>
-
-<!-- ============ PARTE 1: <head> ============ -->
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
 <title>Regras e Critérios · Transporte dos Universitários de Divisa Alegre</title>
-<meta name="description" content="Critérios de lista e avisos do transporte universitário de Divisa Alegre - MG.">
-<meta name="theme-color" content="#0a1436">
+<meta name="description" content="Critérios de lista e avisos do transporte universitário de Divisa Alegre - MG para Vitória da Conquista - BA.">
+<meta name="theme-color" content="#ffffff">
 <link rel="icon" href="img/favicon.png">
-<link rel="stylesheet" href="css/style.css">
-<!-- ============ FIM DA PARTE 1 ============ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600&display=swap" rel="stylesheet">
+<style>
+  /* =========================================================================
+     REGRAS E CRITÉRIOS — Transporte Universitário de Divisa Alegre - MG
+     Direção do unslop: cromar quieto, uma cor de destaque (azul-royal #1b3aa0),
+     três papéis de texto, pesos 400-600, espaçamento em grade de 4px,
+     sem animação em loop, sem gradientes nem brilhos.
+     ========================================================================= */
+  :root {
+    --azul-royal: #1b3aa0;
+    --azul-escuro: #0a1436;
+    --fundo: #ffffff;
+    --fundo-suave: #f4f6fb;
+    --branco: #ffffff;
+    --vidro: rgba(255, 255, 255, 0.80);
+    --borda: rgba(10, 20, 54, 0.14);
+    --borda-fraco: rgba(10, 20, 54, 0.08);
+    --sombra: 0 10px 30px rgba(10, 20, 54, 0.10);
+    --texto: #0a1436;
+    --texto-fraco: #5b6b8f;
+    --texto-suave: #1e2a4a;
+    --raio: 14px;
+    --raio-menor: 10px;
+    --transicao: 0.2s ease;
+    --fonte-titulo: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --fonte-texto: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: var(--fonte-texto);
+    color: var(--texto);
+    background: var(--fundo);
+    line-height: 1.6;
+    font-size: 1rem;
+    color-scheme: light;
+    overflow-x: hidden;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  ::selection { background: var(--azul-royal); color: var(--branco); }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--fundo-suave); }
+  ::-webkit-scrollbar-thumb { background: var(--borda); border-radius: 6px; border: 3px solid var(--fundo-suave); }
+  h1, h2, h3, h4 { font-family: var(--fonte-titulo); margin: 0 0 0.7rem; line-height: 1.15; letter-spacing: -0.01em; font-weight: 600; }
+  p { margin: 0 0 1rem; }
+  a { color: var(--azul-royal); text-decoration: none; }
+  strong { font-weight: 600; }
+  img { display: block; max-width: 100%; }
+
+  /* ============================ CABECALHO ============================ */
+  .cabecalho {
+    position: fixed;
+    inset: env(safe-area-inset-top, 0px) 0 auto 0;
+    z-index: 60;
+    background: rgba(10, 20, 54, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(27, 58, 160, 0.35);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.30);
+    display: flex;
+    align-items: center;
+    padding: 0 max(16px, env(safe-area-inset-left, 0px));
+  }
+  .cabecalho__interno {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    justify-content: center;
+    margin: 0 auto;
+    padding: 0 max(16px, env(safe-area-inset-left, 0px));
+  }
+  .cabecalho__marca { display: none; }
+  .cabecalho__logo img { height: 48px; width: auto; }
+
+  .menu-botao {
+    position: absolute;
+    left: max(16px, env(safe-area-inset-left, 0px));
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    background: var(--fundo-suave);
+    border: 1px solid var(--borda);
+    border-radius: var(--raio-menor);
+    cursor: pointer;
+    padding: 0;
+    transition: background var(--transicao), border-color var(--transicao);
+  }
+  .menu-botao:hover { background: rgba(10, 20, 54, 0.05); }
+  .menu-botao:focus-visible { outline: 2px solid var(--azul-royal); outline-offset: 3px; }
+  .menu-botao span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--texto);
+    transition: transform var(--transicao), opacity var(--transicao);
+  }
+  body.menu-aberto .menu-botao span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+  body.menu-aberto .menu-botao span:nth-child(2) { opacity: 0; }
+  body.menu-aberto .menu-botao span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+  /* ============================ MENU LATERAL ============================ */
+  .menu {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(320px, 88vw);
+    background: var(--azul-escuro);
+    z-index: 70;
+    transform: translateX(-102%);
+    transition: transform var(--transicao);
+    padding: calc(60px + 24px) 24px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-right: 1px solid rgba(27, 58, 160, 0.15);
+  }
+  body.menu-aberto main { filter: blur(6px); pointer-events: none; }
+  body.menu-aberto .cabecalho { filter: blur(6px); }
+  body.menu-aberto .rodape { filter: blur(6px); pointer-events: none; }
+  body.menu-aberto .menu { transform: translateX(0); }
+  .menu__titulo {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  .menu a {
+    color: var(--branco);
+    text-decoration: none;
+    font-size: 1rem;
+    padding: 12px 16px;
+    border-radius: var(--raio-menor);
+    border-left: 3px solid transparent;
+    transition: background var(--transicao), border-color var(--transicao), padding-left var(--transicao);
+    display: block;
+  }
+  .menu a:hover { background: rgba(255, 255, 255, 0.06); padding-left: 22px; }
+  .menu a.ativo {
+    background: rgba(255, 255, 255, 0.08);
+    border-left-color: var(--azul-royal);
+    font-weight: 600;
+    color: var(--branco);
+  }
+  .menu__rodape {
+    margin-top: auto;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.76rem;
+    line-height: 1.5;
+  }
+  .menu__rodape img { height: 56px; width: auto; margin-bottom: 10px; }
+  .fundo-menu {
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 8, 24, 0.50);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transicao);
+    z-index: 65;
+  }
+  body.menu-aberto .fundo-menu { opacity: 1; pointer-events: auto; }
+
+  /* ============================ FAIXA ============================ */
+  .faixa {
+    position: relative;
+    padding: clamp(48px, 6vw, 80px) 0 clamp(36px, 5vw, 60px);
+    background: var(--azul-royal);
+    color: var(--branco);
+    text-align: center;
+    overflow: hidden;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  }
+  .faixa__conteudo {
+    position: relative;
+    z-index: 2;
+    width: min(880px, 92%);
+    margin: 0 auto;
+    opacity: 0;
+    animation: entrarHero 0.9s cubic-bezier(0.23, 1, 0.32, 1) 0.15s both;
+  }
+  @keyframes entrarHero {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: none; }
+  }
+  .faixa h1 { font-size: clamp(1.9rem, 1.2rem + 3vw, 3rem); margin-bottom: 10px; color: var(--branco); }
+  .faixa p { color: rgba(255, 255, 255, 0.92); max-width: 60ch; margin: 0 auto; font-size: 1rem; }
+
+  /* ============================ CONTEUDO ============================ */
+  .secao {
+    padding: clamp(44px, 5vw, 72px) 0;
+    position: relative;
+  }
+  .secao__wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 max(16px, env(safe-area-inset-left, 0px));
+    width: 100%;
+  }
+  .secao__etiqueta {
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    font-weight: 600;
+    color: var(--texto-fraco);
+    margin-bottom: 8px;
+    display: inline-block;
+  }
+  .secao__titulo {
+    font-size: clamp(1.4rem, 1rem + 1.6vw, 2.2rem);
+    color: var(--texto);
+    margin-bottom: 8px;
+  }
+  .secao__subtitulo {
+    color: var(--texto-suave);
+    margin-bottom: 24px;
+    max-width: 60ch;
+    font-size: 0.95rem;
+  }
+  .bloco-titulo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 36px 0 18px;
+    font-size: 1.1rem;
+    color: var(--texto);
+  }
+  .bloco-titulo span {
+    flex: 1;
+    height: 1px;
+    background: var(--borda-fraco);
+  }
+  .bloco-titulo::before {
+    content: "";
+    width: 8px;
+    height: 24px;
+    border-radius: 4px;
+    background: var(--texto);
+  }
+
+  /* ============================ CRITERIOS ============================ */
+  .regras-caixa { max-width: 860px; margin-inline: auto; }
+  .criterios {
+    list-style: none;
+    counter-reset: item;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+  }
+  .criterios li {
+    counter-increment: item;
+    position: relative;
+    padding: 16px 20px 16px 64px;
+    background: var(--vidro);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--borda);
+    border-left: 3px solid var(--azul-escuro);
+    border-radius: var(--raio-menor);
+    box-shadow: var(--sombra);
+  }
+  .criterios li:hover { border-left-color: var(--azul-royal); }
+  .criterios li::before {
+    content: counter(item);
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--azul-escuro);
+    color: var(--branco);
+    display: grid;
+    place-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  /* ============================ AVISOS ============================ */
+  :root {
+    --aviso-prioridade-maxima: #c0392b;
+    --aviso-prioridade-media: #e67e22;
+    --aviso-carona: #27ae60;
+  }
+  .avisos {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+  }
+  .avisos li {
+    position: relative;
+    padding: 15px 20px 15px 48px;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid var(--borda-fraco);
+    border-radius: var(--raio-menor);
+    box-shadow: 0 8px 20px rgba(10, 20, 54, 0.06);
+  }
+  .avisos li::before {
+    content: "";
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--texto-fraco);
+    box-shadow: 0 0 0 4px rgba(10, 20, 54, 0.10);
+  }
+  .avisos b { color: var(--texto); }
+
+  .avisos li.destaque { border-color: rgba(10, 20, 54, 0.25); background: var(--fundo-suave); }
+  .avisos li.destaque::before { background: var(--azul-escuro); box-shadow: 0 0 0 4px rgba(10, 20, 54, 0.20); }
+
+  .avisos li.aviso-vermelho {
+    border-left: 4px solid var(--aviso-prioridade-maxima);
+    background: rgba(192, 57, 43, 0.06);
+    padding-left: 44px;
+  }
+  .avisos li.aviso-vermelho::before { background: var(--aviso-prioridade-maxima); box-shadow: 0 0 0 5px rgba(192, 57, 43, 0.20); }
+
+  .avisos li.prioridade-maxima {
+    border-left: 4px solid var(--aviso-prioridade-maxima);
+    background: rgba(192, 57, 43, 0.06);
+    padding-left: 44px;
+  }
+  .avisos li.prioridade-maxima::before { background: var(--aviso-prioridade-maxima); box-shadow: 0 0 0 5px rgba(192, 57, 43, 0.20); }
+
+  .avisos li.prioridade-media {
+    border-left: 4px solid var(--aviso-prioridade-media);
+    background: rgba(230, 126, 34, 0.06);
+    padding-left: 44px;
+  }
+  .avisos li.prioridade-media::before { background: var(--aviso-prioridade-media); box-shadow: 0 0 0 5px rgba(230, 126, 34, 0.20); }
+
+  .avisos li.carona {
+    border-left: 4px solid var(--aviso-carona);
+    background: rgba(39, 174, 96, 0.06);
+    padding-left: 44px;
+  }
+  .avisos li.carona::before { background: var(--aviso-carona); box-shadow: 0 0 0 5px rgba(39, 174, 96, 0.20); }
+
+  /* ============================ RODAPE ============================ */
+  .rodape {
+    background: var(--azul-escuro);
+    color: var(--branco);
+    padding: 20px 0 16px;
+    text-align: center;
+    border-top: none;
+    margin-top: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .rodape img { height: 28px; width: auto; margin: 0; }
+  .rodape nav { display: flex; gap: 8px 18px; justify-content: center; flex-wrap: wrap; margin: 0; }
+  .rodape nav a { color: var(--branco); text-decoration: none; font-size: 0.9rem; opacity: 0.9; }
+  .rodape nav a:hover { color: var(--branco); text-decoration: underline; opacity: 1; }
+  .rodape small { display: block; font-size: 0.72rem; color: rgba(255,255,255,0.7); margin: 0; }
+
+  /* ============================ TRANSICAO ENTRE PAGINAS ============================ */
+  .transicao {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    pointer-events: none;
+    background: linear-gradient(135deg, var(--fundo-suave), var(--branco));
+    opacity: 0;
+    transition: opacity 0.32s ease;
+  }
+  body.saindo .transicao { opacity: 1; }
+
+  /* ============================ MOBILE ============================ */
+  @media (max-width: 720px) {
+    body { padding-block: 24px; }
+    .cabecalho__logo img { height: 40px; }
+    .secao { padding: clamp(36px, 5vw, 56px) 0; }
+    .faixa { padding: clamp(38px, 5vw, 60px) 0 clamp(30px, 5vw, 48px); }
+    .bloco-titulo { font-size: 1rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition-duration: 0.01s !important; }
+    .faixa__conteudo { opacity: 1; transform: none; }
+  }
+</style>
 </head>
 <body>
 
-<!-- ============ PARTE 2: CABECALHO ============ -->
+<!-- CABECALHO -->
 <header class="cabecalho">
   <button class="menu-botao" aria-label="Abrir menu de navegação" aria-controls="menu-principal" aria-expanded="false">
     <span></span><span></span><span></span>
   </button>
-  <a class="cabecalho__logo" href="index.html" aria-label="Página inicial">
-    <img src="img/logo-contorno.png" alt="Comissão de Transporte dos Universitários de Divisa Alegre - MG">
-  </a>
-  <!-- Atalho "Início" que aparece no canto direito (some no celular) -->
-  <a class="cabecalho__voltar" href="index.html">Início</a>
+  <div class="cabecalho__interno">
+    <a class="cabecalho__logo" href="index.html" aria-label="Página inicial">
+      <img src="img/logo-contorno.png" alt="Comissão de Transporte dos Universitários de Divisa Alegre - MG">
+    </a>
+    <div class="cabecalho__marca">Comissão de Transporte dos Universitários de Divisa Alegre - MG</div>
+  </div>
 </header>
-<!-- ============ FIM DA PARTE 2 ============ -->
 
-<!-- ============ PARTE 3: MENU LATERAL ============ -->
+<!-- MENU LATERAL -->
 <nav class="menu" id="menu-principal" aria-label="Menu principal">
   <p class="menu__titulo">Navegação</p>
   <a href="index.html">Página inicial</a>
@@ -41,80 +438,95 @@
   </div>
 </nav>
 <button class="fundo-menu" aria-label="Fechar menu" tabindex="-1"></button>
-<!-- ============ FIM DA PARTE 3 ============ -->
 
 <main>
-
-  <!-- ============ PARTE 4: TITULO DA PAGINA (faixa azul) ============ -->
-  <!-- Para mudar o texto grande, edite o <h1>; o texto menor fica no <p>. -->
+  <!-- FAIXA -->
   <section class="faixa">
-    <div class="container">
+    <div class="faixa__conteudo">
       <h1>Regras e Critérios</h1>
       <p>Como funciona a ordem da lista e os avisos importantes para quem usa o transporte todos os dias.</p>
     </div>
   </section>
-  <!-- ============ FIM DA PARTE 4 ============ -->
 
   <section class="secao">
-    <div class="container regras-caixa">
+    <div class="secao__wrap">
 
-      <!-- ============ PARTE 5: CRITERIOS DE LISTA ============ -->
-      <!-- A numeracao 1, 2, 3... e automatica: basta adicionar ou remover <li> -->
-      <div class="revelar">
-        <span class="secao__etiqueta">Ordem de prioridade</span>
-        <h2 class="secao__titulo">Critérios de Lista</h2>
-        <p class="secao__subtitulo">A ordem abaixo define quem entra primeiro na van.</p>
-      </div>
+      <div class="secao__etiqueta">Ordem de prioridade</div>
+      <h2 class="secao__titulo">Critérios de Lista</h2>
+      <p class="secao__subtitulo">A ordem abaixo define quem entra primeiro na van.</p>
 
       <ol class="criterios">
-        <li class="revelar">Prova / Estágio</li>
-        <li class="revelar">Quem volta / com justificativa <em>(ida não é prioridade)</em></li>
-        <li class="revelar">Quem faz uso há mais tempo do transporte</li>
-        <li class="revelar">Por ordem de semestre (do 10° ao 1°)</li>
-        <li class="revelar">Primeira graduação (tem que ser graduação)</li>
-        <li class="revelar">Utilize mais dias na semana</li>
+        <li>Prova / Estágio</li>
+        <li>Quem volta / com justificativa <em>(ida não é prioridade)</em></li>
+        <li>Quem faz uso há mais tempo do transporte</li>
+        <li>Por ordem de semestre (do 10° ao 1°)</li>
+        <li>Primeira graduação (tem que ser graduação)</li>
+        <li>Utilize mais dias na semana</li>
       </ol>
-      <!-- ============ FIM DA PARTE 5 ============ -->
 
-      <!-- Titulo com a linha ao lado (o <span> vazio desenha a linha) -->
-      <div class="revelar">
-        <h3 class="bloco-titulo">Avisos<span></span></h3>
-      </div>
+      <div class="bloco-titulo">Avisos<span></span></div>
 
-      <!-- ============ PARTE 6: AVISOS ============ -->
-      <!-- Dica: coloque a classe "destaque" no <li> para realcar o aviso em azul/amarelo -->
       <ul class="avisos">
-        <li class="revelar destaque">Saída da esquina da prefeitura às <b>16:20</b>.</li>
-        <li class="revelar">Por favor, colocar o nome na lista até as <b>10h da manhã</b>. Com exceção de aula marcada de última hora.</li>
-        <li class="revelar">A entrada no transporte é por ordem de chegada ao ponto e volta no mesmo assento que foi.</li>
-        <li class="revelar">Grupo exclusivo para uso dos universitários e motorista.</li>
-        <li class="revelar">Carona não é prioridade; universitários entram na van antes de carona.</li>
-        <li class="revelar destaque">Alunos residentes e com documento de Divisa ou que possuem o documento em Divisa: <b>prioridade máxima</b>.</li>
-        <li class="revelar">Alunos residentes em Divisa mas sem documento: <b>prioridade média</b>.</li>
-        <li class="revelar">Alunos residentes em outras cidades e sem documento de Divisa: <b>carona</b>.</li>
+        <li class="destaque aviso-vermelho">Saída da esquina da prefeitura às <b>16:20</b>.</li>
+        <li class="aviso-vermelho">Por favor, colocar o nome na lista até as <b>10h da manhã</b>. Com exceção de aula marcada de última hora.</li>
+        <li class="aviso-vermelho">A entrada no transporte é por ordem de chegada ao ponto e volta no mesmo assento que foi.</li>
+        <li class="aviso-vermelho">Grupo exclusivo para uso dos universitários e motorista.</li>
+        <li class="carona">Carona não é prioridade; universitários entram na van antes de carona.</li>
+        <li class="prioridade-maxima">Alunos residentes e com documento de Divisa ou que possuem o documento em Divisa: <b>prioridade máxima</b>.</li>
+        <li class="prioridade-media">Alunos residentes em Divisa mas sem documento: <b>prioridade média</b>.</li>
+        <li class="carona">Alunos residentes em outras cidades e sem documento de Divisa: <b>carona</b>.</li>
       </ul>
-      <!-- ============ FIM DA PARTE 6 ============ -->
 
     </div>
   </section>
 </main>
 
-<!-- ============ PARTE 7: RODAPE ============ -->
+<!-- RODAPE -->
 <footer class="rodape">
-  <div class="container">
-    <img src="img/logo-contorno.png" alt="Comissão de Transporte dos Universitários de Divisa Alegre - MG">
-    <nav aria-label="Rodapé">
-      <a href="index.html">Página inicial</a>
-      <a href="regras.html">Regras e Critérios</a>
-      <a href="universidades.html">Universidades</a>
-      <a href="manual.html">Manual dos Universitários</a>
-    </nav>
-    <small>Comissão de Transporte dos Universitários de Divisa Alegre - MG · <span data-ano></span></small>
-  </div>
+  <img src="img/logo-contorno.png" alt="Comissão de Transporte dos Universitários de Divisa Alegre - MG">
+  <nav aria-label="Rodapé">
+    <a href="index.html">Página inicial</a>
+    <a href="regras.html">Regras e Critérios</a>
+    <a href="universidades.html">Universidades</a>
+    <a href="manual.html">Manual dos Universitários</a>
+  </nav>
+  <small>Comissão de Transporte dos Universitários de Divisa Alegre - MG · <span data-ano></span></small>
 </footer>
-<!-- ============ FIM DA PARTE 7 ============ -->
 
 <div class="transicao" aria-hidden="true"></div>
-<script src="js/main.js"></script>
+<script>
+  (function () {
+    "use strict";
+
+    const botaoMenu = document.querySelector(".menu-botao");
+    const fundoMenu = document.querySelector(".fundo-menu");
+    function fecharMenu() { document.body.classList.remove("menu-aberto"); }
+    function alternarMenu() { document.body.classList.toggle("menu-aberto"); }
+    if (botaoMenu) {
+      botaoMenu.addEventListener("click", alternarMenu);
+      botaoMenu.setAttribute("aria-expanded", "false");
+    }
+    if (fundoMenu) fundoMenu.addEventListener("click", fecharMenu);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") fecharMenu(); });
+
+    document.addEventListener("click", function (e) {
+      const a = e.target.closest("a");
+      if (!a) return;
+      const href = a.getAttribute("href") || "";
+      const externo = a.target === "_blank" || /^(https?:|mailto:|tel:|#)/i.test(href);
+      if (externo || !/\.html$/i.test(href)) return;
+      e.preventDefault();
+      fecharMenu();
+      document.body.classList.add("saindo");
+      setTimeout(function () { window.location.href = href; }, 260);
+    });
+    window.addEventListener("pageshow", function () { document.body.classList.remove("saindo"); });
+    setTimeout(function () { document.body.classList.add("pronto"); }, 40);
+
+    document.querySelectorAll("[data-ano]").forEach(function (el) {
+      el.textContent = new Date().getFullYear();
+    });
+  })();
+</script>
 </body>
 </html>

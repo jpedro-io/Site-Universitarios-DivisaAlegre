@@ -142,13 +142,6 @@
      ================================================================== */
   const cxTempoViagem = document.getElementById("tempo-viagem-conteudo");
 
-  function classificarTempoViagem(minutos) {
-    if (minutos <= 90) return { tipo: "bom", texto: "Trânsito bom", cor: "#22c55e" };
-    if (minutos > 120) return { tipo: "ruim", texto: "Trânsito ruim/parado", cor: "#ff6b6b" };
-    if (minutos >= 100) return { tipo: "lento", texto: "Trânsito lento", cor: "#f0b429" };
-    return { tipo: "bom", texto: "Trânsito bom", cor: "#22c55e" };
-  }
-
   function carregarTempoViagem() {
     if (!cxTempoViagem) return;
 
@@ -166,19 +159,18 @@
         if (!d.ok) throw new Error(d.erro || "Falha ao consultar o trânsito");
 
         const tempoAtual = d.tempoAtualMin || 0;
-        const classificacao = classificarTempoViagem(tempoAtual);
         const chegada = new Date(Date.now() + tempoAtual * 60 * 1000);
 
         cxTempoViagem.innerHTML = `
           <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-            <span style="font-size: 1.1rem; font-weight: 800; color: ${classificacao.cor};">${tempoAtual} min</span>
+            <span style="font-size: 1.1rem; font-weight: 600; color: #fff;">${tempoAtual} min</span>
             <span style="font-size: 0.75rem; font-weight: 500; color: rgba(255,255,255,0.8);">agora</span>
           </div>
-          <p style="margin: 4px 0 0; font-size: 0.7rem; font-weight: 700; color: ${classificacao.cor}; text-transform: uppercase;">${classificacao.texto}</p>
+          <p style="margin: 4px 0 0; font-size: 0.7rem; font-weight: 600; color: rgba(255,255,255,0.9); text-transform: uppercase;">Trânsito estimado</p>
         `;
 
         // Armazena o tempo atual para uso nas notificações
-        window.ultimoTempoViagem = { minutos: tempoAtual, classificacao: classificacao.tipo, atualizadoEm: d.verificadoEm };
+        window.ultimoTempoViagem = { minutos: tempoAtual, atualizadoEm: d.verificadoEm };
       })
       .catch(function (e) {
         cxTempoViagem.innerHTML = '<p style="color:#fff; text-align:center;">Não foi possível carregar o tempo de viagem.<br><small>' + (e.message || "") + '</small></p>';

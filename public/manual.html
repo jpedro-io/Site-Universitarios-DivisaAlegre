@@ -1,32 +1,383 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="light">
 <head>
-
-<!-- ============ PARTE 1: <head> ============ -->
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
 <title>Manual dos Universitários · Transporte dos Universitários de Divisa Alegre</title>
 <meta name="description" content="Ferramentas úteis, cursos gratuitos e documentos de apoio para os universitários de Divisa Alegre - MG.">
-<meta name="theme-color" content="#0a1436">
+<meta name="theme-color" content="#ffffff">
 <link rel="icon" href="img/favicon.png">
-<link rel="stylesheet" href="css/style.css">
-<!-- ============ FIM DA PARTE 1 ============ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* =========================================================================
+     MANUAL DOS UNIVERSITÁRIOS — DESIGN LIQUID GLASS
+     ========================================================================= */
+  :root {
+    --azul-royal: #1b3aa0;
+    --azul-escuro: #0a1436;
+    --azul-profundo: #0f1a3a;
+    --fundo: #ffffff;
+    --fundo-suave: #f4f6fb;
+    --branco: #ffffff;
+    --vidro: rgba(255, 255, 255, 0.72);
+    --vidro-suave: rgba(255, 255, 255, 0.55);
+    --borda-vidro: rgba(10, 20, 54, 0.18);
+    --borda-vidro-fraco: rgba(10, 20, 54, 0.10);
+    --sombra-vidro: 0 20px 50px rgba(10, 20, 54, 0.12);
+    --texto: #0a1436;
+    --texto-fraco: #5b6b8f;
+    --texto-suave: #1e2a4a;
+    --raio: 22px;
+    --raio-menor: 14px;
+    --pill: 999px;
+    --transicao: 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+    --fonte-titulo: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --fonte-texto: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: var(--fonte-texto);
+    color: var(--texto);
+    background: var(--fundo);
+    line-height: 1.6;
+    font-size: 11pt;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    color-scheme: light;
+    overflow-x: hidden;
+  }
+  ::selection { background: var(--azul-royal); color: var(--branco); }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--fundo-suave); }
+  ::-webkit-scrollbar-thumb { background: var(--borda-vidro); border-radius: 6px; border: 3px solid var(--fundo-suave); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--azul-escuro); }
+  h1, h2, h3, h4 { font-family: var(--fonte-titulo); margin: 0 0 0.7rem; line-height: 1.12; letter-spacing: -0.02em; }
+  p { margin: 0 0 1rem; }
+  a { color: var(--azul-royal); text-decoration: none; }
+  strong { font-weight: 800; }
+  img { display: block; max-width: 100%; }
+
+  /* ============================ CABECALHO ============================ */
+  .cabecalho {
+    position: fixed;
+    inset: env(safe-area-inset-top, 0px) 0 auto 0;
+    z-index: 60;
+    background: rgba(10, 20, 54, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(27, 58, 160, 0.35);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.30);
+    display: flex;
+    align-items: center;
+    padding: 0 max(16px, env(safe-area-inset-left, 0px));
+  }
+  .cabecalho__interno {
+    width: min(1140px, 100% - 2rem);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 0 auto;
+  }
+  .cabecalho__logo { display: inline-flex; align-items: center; }
+  .cabecalho__logo img { height: 52px; width: auto; }
+  .cabecalho__marca {
+    font-family: var(--fonte-titulo);
+    font-weight: 800;
+    font-size: 1rem;
+    letter-spacing: -0.01em;
+    color: var(--texto);
+  }
+
+  .menu-botao {
+    position: absolute;
+    left: max(16px, env(safe-area-inset-left, 0px));
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--borda-vidro);
+    border-radius: 12px;
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.3s ease, border-color 0.3s ease;
+  }
+  .menu-botao:hover { background: rgba(255, 255, 255, 0.12); }
+  .menu-botao:focus-visible { outline: 2px solid var(--azul-royal); outline-offset: 3px; }
+  .menu-botao span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--branco);
+    transition: transform 0.3s ease, opacity 0.25s ease;
+  }
+  body.menu-aberto .menu-botao span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  body.menu-aberto .menu-botao span:nth-child(2) { opacity: 0; }
+  body.menu-aberto .menu-botao span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ============================ MENU LATERAL ============================ */
+  .menu {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(320px, 88vw);
+    background: #0a1436;
+    z-index: 70;
+    transform: translateX(-102%);
+    transition: transform var(--transicao);
+    padding: calc(60px + 26px) 26px 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-shadow: 4px 0 30px rgba(0, 0, 0, 0.45);
+    border-right: 1px solid rgba(27, 58, 160, 0.25);
+  }
+  body.menu-aberto .menu { transform: translateX(0); }
+  .menu__titulo {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    font-weight: 800;
+    margin-bottom: 12px;
+  }
+  .menu a {
+    color: var(--branco);
+    text-decoration: none;
+    font-size: 1rem;
+    padding: 12px 16px;
+    border-radius: var(--raio-menor);
+    border-left: 3px solid transparent;
+    transition: background 0.3s ease, border-color 0.3s ease, padding-left 0.3s ease;
+    display: block;
+  }
+  .menu a:hover { background: rgba(255, 255, 255, 0.08); padding-left: 22px; }
+  .menu a.ativo {
+    background: rgba(255, 255, 255, 0.10);
+    border-left-color: var(--azul-royal);
+    font-weight: 700;
+    color: var(--branco);
+  }
+  .menu__rodape {
+    margin-top: auto;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.76rem;
+    line-height: 1.5;
+  }
+  .menu__rodape img { height: 72px; width: auto; margin-bottom: 10px; }
+  .fundo-menu {
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 8, 24, 0.60);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transicao);
+    z-index: 65;
+  }
+  body.menu-aberto .fundo-menu { opacity: 1; pointer-events: auto; }
+
+  /* ============================ FAIXA ============================ */
+  .faixa {
+    position: relative;
+    margin-top: 64px;
+    padding: clamp(56px, 7vw, 100px) 0 clamp(44px, 6vw, 72px);
+    background: var(--azul-royal);
+    color: var(--branco);
+    text-align: center;
+    overflow: hidden;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  }
+  .faixa__conteudo {
+    position: relative;
+    z-index: 2;
+    width: min(880px, 92%);
+    margin: 0 auto;
+    opacity: 0;
+    animation: entrarHero 1s cubic-bezier(0.23, 1, 0.32, 1) 0.2s both;
+  }
+  @keyframes entrarHero {
+    from { opacity: 0; transform: translateY(22px); }
+    to { opacity: 1; transform: none; }
+  }
+  .faixa h1 { font-size: clamp(1.9rem, 1.2rem + 3vw, 3rem); margin-bottom: 10px; color: var(--branco); }
+  .faixa p { color: rgba(255, 255, 255, 0.92); max-width: 60ch; margin: 0 auto; font-size: 1rem; }
+
+  /* ============================ CONTEUDO ============================ */
+  .secao {
+    padding: clamp(52px, 6vw, 86px) 0;
+    position: relative;
+  }
+  .secao__wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 max(16px, env(safe-area-inset-left, 0px));
+    width: 100%;
+  }
+  .secao__etiqueta {
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    font-weight: 800;
+    color: var(--texto-fraco);
+    margin-bottom: 8px;
+    display: inline-block;
+  }
+  .secao__titulo {
+    font-size: clamp(1.4rem, 1rem + 1.6vw, 2.2rem);
+    color: var(--texto);
+    margin-bottom: 8px;
+  }
+  .secao__subtitulo {
+    color: var(--texto-suave);
+    margin-bottom: 30px;
+    max-width: 60ch;
+    font-size: 0.95rem;
+  }
+  .bloco-titulo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 44px 0 22px;
+    font-size: 1.1rem;
+    color: var(--texto);
+  }
+  .bloco-titulo span {
+    flex: 1;
+    height: 1px;
+    background: var(--borda-vidro-fraco);
+  }
+  .bloco-titulo::before {
+    content: "";
+    width: 8px;
+    height: 26px;
+    border-radius: 4px;
+    background: var(--texto);
+  }
+
+  /* Ferramentas */
+  .grade-ferramentas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  .ferramenta {
+    background: var(--vidro);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid var(--borda-vidro);
+    border-radius: var(--raio);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: var(--sombra-vidro);
+    transition: transform 0.4s ease, border-color 0.4s ease;
+  }
+  .ferramenta:hover { transform: translateY(-5px); border-color: rgba(10, 20, 54, 0.35); }
+  .ferramenta__nome { font-size: 1.06rem; color: var(--texto); margin: 0 0 6px; }
+  .ferramenta p { font-size: 0.92rem; color: var(--texto-suave); margin: 0; }
+  .ferramenta__links {
+    margin-top: auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: 1px solid var(--borda-vidro-fraco);
+  }
+  .ferramenta__links a {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+    color: var(--texto);
+    border: 1px solid var(--borda-vidro);
+    background: var(--vidro-suave);
+    padding: 8px 14px;
+    border-radius: 26px;
+    transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  }
+  .ferramenta__links a:hover { background: var(--azul-escuro); color: var(--branco); border-color: var(--azul-escuro); }
+
+  /* ============================ RODAPE ============================ */
+  .rodape {
+    background: var(--azul-escuro);
+    color: var(--branco);
+    padding: 22px 0 18px;
+    text-align: center;
+    border-top: none;
+    margin-top: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .rodape img { height: 32px; width: auto; margin: 0; }
+  .rodape nav { display: flex; gap: 8px 18px; justify-content: center; flex-wrap: wrap; margin: 0; }
+  .rodape nav a { color: var(--branco); text-decoration: none; font-size: 0.9rem; opacity: 0.9; }
+  .rodape nav a:hover { color: var(--branco); text-decoration: underline; opacity: 1; }
+  .rodape small { display: block; font-size: 0.72rem; color: rgba(255,255,255,0.7); margin: 0; }
+
+  /* ============================ TRANSICAO ============================ */
+  .transicao {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    pointer-events: none;
+    background: linear-gradient(135deg, var(--fundo-suave), var(--branco));
+    opacity: 0;
+    transition: opacity 0.32s ease;
+  }
+  body.saindo .transicao { opacity: 1; }
+
+  /* ============================ MOBILE ============================ */
+  @media (max-width: 720px) {
+    body { padding-block: 24px; }
+    .cabecalho__marca { font-size: 0.9rem; }
+    .cabecalho__logo img { height: 42px; }
+    .secao { padding: clamp(40px, 5vw, 64px) 0; }
+    .faixa { margin-top: 0; padding: clamp(44px, 6vw, 72px) 0 clamp(36px, 5vw, 56px); }
+    .informacoes__grid, .grade-ferramentas { grid-template-columns: 1fr; }
+    .bloco-titulo { font-size: 1rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition-duration: 0.01s !important; }
+    .faixa__conteudo { opacity: 1; transform: none; }
+    body { opacity: 1; }
+  }
+
+  /* ============================ ANIMACOES AMBIENTE ============================ */
+  @keyframes respirar {
+    0%, 100% { box-shadow: var(--sombra-vidro); transform: translateY(0); }
+    50% { box-shadow: 0 28px 60px rgba(10, 20, 54, 0.18); transform: translateY(-4px); }
+  }
+  .ferramenta { animation: respirar 5s ease-in-out infinite; }
+</style>
 </head>
 <body>
 
-<!-- ============ PARTE 2: CABECALHO ============ -->
+<!-- CABECALHO -->
 <header class="cabecalho">
   <button class="menu-botao" aria-label="Abrir menu de navegação" aria-controls="menu-principal" aria-expanded="false">
     <span></span><span></span><span></span>
   </button>
-  <a class="cabecalho__logo" href="index.html" aria-label="Página inicial">
-    <img src="img/logo-contorno.png" alt="Comissão de Transporte dos Universitários de Divisa Alegre - MG">
-  </a>
-  <a class="cabecalho__voltar" href="index.html">Início</a>
+  <div class="cabecalho__interno">
+    <a class="cabecalho__logo" href="index.html" aria-label="Página inicial">
+      <img src="img/logo-contorno.png" alt="Comissão de Transporte dos Universitários de Divisa Alegre - MG">
+    </a>
+    <div class="cabecalho__marca">Comissão de Transporte dos Universitários de Divisa Alegre - MG</div>
+  </div>
 </header>
-<!-- ============ FIM DA PARTE 2 ============ -->
 
-<!-- ============ PARTE 3: MENU LATERAL ============ -->
+<!-- MENU LATERAL -->
 <nav class="menu" id="menu-principal" aria-label="Menu principal">
   <p class="menu__titulo">Navegação</p>
   <a href="index.html">Página inicial</a>
@@ -39,33 +390,28 @@
   </div>
 </nav>
 <button class="fundo-menu" aria-label="Fechar menu" tabindex="-1"></button>
-<!-- ============ FIM DA PARTE 3 ============ -->
 
 <main>
 
-  <!-- ============ PARTE 4: TITULO DA PAGINA ============ -->
+  <!-- FAIXA -->
   <section class="faixa">
-    <div class="container">
+    <div class="faixa__conteudo">
       <h1>Manual dos Universitários</h1>
       <p>Dicas de sites, ferramentas de estudo e documentos úteis para o dia a dia da faculdade.</p>
     </div>
   </section>
-  <!-- ============ FIM DA PARTE 4 ============ -->
 
   <section class="secao">
-    <div class="container">
+    <div class="secao__wrap">
 
-      <!-- ============ PARTE 5: PLATAFORMAS DE ESTUDO ============ -->
-      <div class="revelar">
-        <span class="secao__etiqueta">Ferramentas úteis e cursos</span>
-        <h2 class="secao__titulo">Plataformas de estudo e aprendizagem</h2>
-        <p class="secao__subtitulo">Cursos gratuitos com certificado, apoio com inteligência artificial e comparação de modelos.</p>
-      </div>
+      <div class="secao__etiqueta">Ferramentas úteis e cursos</div>
+      <h2 class="secao__titulo">Plataformas de estudo e aprendizagem</h2>
+      <p class="secao__subtitulo">Cursos gratuitos com certificado, apoio com inteligência artificial e comparação de modelos.</p>
 
       <div class="grade-ferramentas">
 
         <!-- ===== CARD: IFRS MUNDI ===== -->
-        <article class="ferramenta revelar">
+        <article class="ferramenta">
           <h3 class="ferramenta__nome">IFRS Mundi (IFSul)</h3>
           <p>Plataforma de cursos online e gratuitos com certificado sem custos. Excelente para horas complementares na faculdade e para aprender idiomas (Inglês, Espanhol, Libras e Português Instrumental) no teu próprio ritmo.</p>
           <div class="ferramenta__links">
@@ -74,7 +420,7 @@
         </article>
 
         <!-- ===== CARD: NOTEBOOKLM ===== -->
-        <article class="ferramenta revelar">
+        <article class="ferramenta">
           <h3 class="ferramenta__nome">NotebookLM (Google)</h3>
           <p>IA focada em estudos. Carregas os teus próprios PDFs, slides, artigos ou anotações de aula e a ferramenta gera resumos, cronogramas, cartões de memória (flashcards), pequenos questionários para testar os teus conhecimentos e resumos em áudio sem inventar informações fora do teu material.</p>
           <div class="ferramenta__links">
@@ -84,25 +430,22 @@
         </article>
 
         <!-- ===== CARD: ARENA IA ===== -->
-        <article class="ferramenta revelar">
+        <article class="ferramenta">
           <h3 class="ferramenta__nome">Arena IA</h3>
           <p>Plataforma para testar e comparar modelos de inteligência artificial (como ChatGPT, Claude, Gemini e Grok). Podes usar o modo Batalha para ver qual IA responde melhor à tua pergunta sem viés, o modo Agente, ou consultar dois modelos em simultâneo no modo Lado a Lado.</p>
           <div class="ferramenta__links">
             <a href="https://arena.ai/text" target="_blank" rel="noopener noreferrer">Acessar</a>
           </div>
         </article>
-      </div>
-      <!-- ============ FIM DA PARTE 5 ============ -->
 
-      <!-- ============ PARTE 6: ORGANIZACAO E PRODUTIVIDADE ============ -->
-      <div class="revelar">
-        <h3 class="bloco-titulo">Organização e produtividade acadêmica (recomendados)<span></span></h3>
       </div>
+
+      <div class="bloco-titulo">Organização e produtividade acadêmica (recomendados)<span></span></div>
 
       <div class="grade-ferramentas">
 
         <!-- ===== CARD: NOTION ===== -->
-        <article class="ferramenta revelar">
+        <article class="ferramenta">
           <h3 class="ferramenta__nome">Notion</h3>
           <p>A ferramenta definitiva de organização para estudantes. Permite criar quadros de horários de aulas, acompanhar entregas de trabalhos, gerir datas de exames, guardar apontamentos por disciplina e organizar a vida pessoal num só espaço personalizável.</p>
           <div class="ferramenta__links">
@@ -111,7 +454,7 @@
         </article>
 
         <!-- ===== CARD: ANKI ===== -->
-        <article class="ferramenta revelar">
+        <article class="ferramenta">
           <h3 class="ferramenta__nome">Anki</h3>
           <p>Aplicativo de flashcards (cartões de memorização) baseado no sistema de repetição espaçada. É a ferramenta mais recomendada para memorizar termos técnicos, fórmulas, conceitos complexos e vocabulário de idiomas de forma eficiente para os exames.</p>
           <div class="ferramenta__links">
@@ -120,60 +463,87 @@
         </article>
 
         <!-- ===== CARD: ZOTERO ===== -->
-        <article class="ferramenta revelar">
+        <article class="ferramenta">
           <h3 class="ferramenta__nome">Zotero</h3>
           <p>Gestor de referências bibliográficas gratuito e de código aberto. Ajuda a recolher, organizar e citar artigos científicos, livros e documentos de forma automática, poupando horas na formatação dos trabalhos acadêmicos.</p>
           <div class="ferramenta__links">
             <a href="https://www.zotero.org/" target="_blank" rel="noopener noreferrer">Site</a>
           </div>
         </article>
+
       </div>
-      <!-- ============ FIM DA PARTE 6 ============ -->
 
     </div>
   </section>
 
-  <!-- ============ PARTE 7: DOCUMENTACAO E DECLARACOES ============ -->
-  <section class="secao secao--cinza">
-    <div class="container">
-      <div class="revelar">
-        <span class="secao__etiqueta">Documentação e declarações</span>
-        <h2 class="secao__titulo">Declaração de atrasos no transporte</h2>
-        <p class="secao__subtitulo">Modelo de declaração para justificativa acadêmica em caso de atrasos no transporte ou imprevistos.</p>
-      </div>
+  <section class="secao">
+    <div class="secao__wrap">
+
+      <div class="secao__etiqueta">Documentação e declarações</div>
+      <h2 class="secao__titulo">Declaração de atrasos no transporte</h2>
+      <p class="secao__subtitulo">Modelo de declaração para justificativa acadêmica em caso de atrasos no transporte ou imprevistos.</p>
 
       <div class="grade-ferramentas">
-        <article class="ferramenta revelar">
+        <article class="ferramenta">
           <h3 class="ferramenta__nome">Declaração de Atrasos no Transporte / Comprovativo de Presença</h3>
-          <p>Abra ficheiro no Google Drive para consultar o modelo de Declaração de Atrasos e apresentar a justificativa na faculdade quando houver atraso no transporte ou algum imprevisto. O documento está em word.docx, é so baixar e editar no word ou docs, ele é autoexplicativo. </p>
+          <p>Abra ficheiro no Google Drive para consultar o modelo de Declaração de Atrasos e apresentar a justificativa na faculdade quando houver atraso no transporte ou algum imprevisto. O documento está em word.docx, é só baixar e editar no Word ou Docs, ele é autoexplicativo.</p>
           <div class="ferramenta__links">
-            <!-- Este e o link do documento no Google Drive -->
             <a href="https://docs.google.com/document/d/1M5RjERXWh-mVcqxLTPsYJ34cNE60i_Di/edit?usp=drive_link&amp;ouid=102346994765995191010&amp;rtpof=true&amp;sd=true" target="_blank" rel="noopener noreferrer">Abrir documento</a>
           </div>
         </article>
       </div>
+
     </div>
   </section>
-  <!-- ============ FIM DA PARTE 7 ============ -->
 
 </main>
 
-<!-- ============ PARTE 8: RODAPE ============ -->
+<!-- RODAPE -->
 <footer class="rodape">
-  <div class="container">
-    <img src="img/logo-contorno.png" alt="Comissão de Transporte dos Universitários de Divisa Alegre - MG">
-    <nav aria-label="Rodapé">
-      <a href="index.html">Página inicial</a>
-      <a href="regras.html">Regras e Critérios</a>
-      <a href="universidades.html">Universidades</a>
-      <a href="manual.html">Manual dos Universitários</a>
-    </nav>
-    <small>Comissão de Transporte dos Universitários de Divisa Alegre - MG · <span data-ano></span></small>
-  </div>
+  <img src="img/logo-contorno.png" alt="Comissão de Transporte dos Universitários de Divisa Alegre - MG">
+  <nav aria-label="Rodapé">
+    <a href="index.html">Página inicial</a>
+    <a href="regras.html">Regras e Critérios</a>
+    <a href="universidades.html">Universidades</a>
+    <a href="manual.html">Manual dos Universitários</a>
+  </nav>
+  <small>Comissão de Transporte dos Universitários de Divisa Alegre - MG · <span data-ano></span></small>
 </footer>
-<!-- ============ FIM DA PARTE 8 ============ -->
 
 <div class="transicao" aria-hidden="true"></div>
-<script src="js/main.js"></script>
+<script>
+  (function () {
+    "use strict";
+
+    const botaoMenu = document.querySelector(".menu-botao");
+    const fundoMenu = document.querySelector(".fundo-menu");
+    function fecharMenu() { document.body.classList.remove("menu-aberto"); }
+    function alternarMenu() { document.body.classList.toggle("menu-aberto"); }
+    if (botaoMenu) {
+      botaoMenu.addEventListener("click", alternarMenu);
+      botaoMenu.setAttribute("aria-expanded", "false");
+    }
+    if (fundoMenu) fundoMenu.addEventListener("click", fecharMenu);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") fecharMenu(); });
+
+    document.addEventListener("click", function (e) {
+      const a = e.target.closest("a");
+      if (!a) return;
+      const href = a.getAttribute("href") || "";
+      const externo = a.target === "_blank" || /^(https?:|mailto:|tel:|#)/i.test(href);
+      if (externo || !/\.html$/i.test(href)) return;
+      e.preventDefault();
+      fecharMenu();
+      document.body.classList.add("saindo");
+      setTimeout(function () { window.location.href = href; }, 260);
+    });
+    window.addEventListener("pageshow", function () { document.body.classList.remove("saindo"); });
+    setTimeout(function () { document.body.classList.add("pronto"); }, 40);
+
+    document.querySelectorAll("[data-ano]").forEach(function (el) {
+      el.textContent = new Date().getFullYear();
+    });
+  })();
+</script>
 </body>
 </html>
