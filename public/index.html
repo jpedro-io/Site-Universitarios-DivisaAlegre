@@ -1182,46 +1182,39 @@
     const btnTestar = document.getElementById("btn-testar-notificacao");
     if (btnTestar) {
       btnTestar.addEventListener("click", async function () {
-        // 1. Navegador não suporta notificações (ex.: Safari iOS antigo)
-        if (!("Notification" in window)) {
+        // 1. Navegador não suporta Service Worker ou notificações (ex.: Safari iOS antigo)
+        if (!("serviceWorker" in navigator) || !("Notification" in window)) {
           return alert("Este navegador não suporta notificações.");
         }
 
-        // 2. Verifica permissão atual
+        // 2. Verifica permissão
         const estado = Notification.permission;
-
-        if (estado === "granted") {
-          // Já tem permissão: dispara direto
-          try {
-            new Notification("Transporte Universitário", {
-              body: "Esta é uma notificação de teste do transporte de Divisa Alegre.",
-              icon: "./img/favicon.png",
-            });
-          } catch (e) {
-            alert("Não foi possível exibir a notificação: " + e.message);
-          }
-          return;
-        }
 
         if (estado === "denied") {
           return alert("As notificações estão bloqueadas neste navegador. Libere-as nas configurações do site e tente novamente.");
         }
 
-        // 3. "default": pede permissão
-        const perm = await Notification.requestPermission();
-        if (perm === "granted") {
-          try {
-            new Notification("Transporte Universitário", {
-              body: "Esta é uma notificação de teste do transporte de Divisa Alegre.",
-              icon: "./img/favicon.png",
-            });
-          } catch (e) {
-            alert("Não foi possível exibir a notificação: " + e.message);
+        // 3. Pede permissão se ainda não tiver
+        if (estado === "default") {
+          const perm = await Notification.requestPermission();
+          if (perm !== "granted") {
+            return alert("Permissão não concedida. As notificações não funcionarão.");
           }
-        } else if (perm === "denied") {
-          alert("Permissão negada. As notificações não funcionarão até você liberar nas configurações do navegador.");
-        } else {
-          alert("Permissão não concedida. Tente novamente.");
+        }
+
+        // 4. Dispara via Service Worker (funciona em Android Chrome e iOS Safari 16.4+)
+        try {
+          const registro = await navigator.serviceWorker.ready;
+          await registro.showNotification("Transporte Universitário · Divisa Alegre", {
+            body: "Esta é uma notificação de teste do transporte de Divisa Alegre.",
+            icon: "/img/favicon.png",
+            badge: "/img/favicon.png",
+            tag: "transporte-universitario-teste",
+            data: { url: "/" },
+            actions: [{ action: "abrir", title: "Abrir site" }],
+          });
+        } catch (e) {
+          alert("Não foi possível exibir a notificação: " + e.message);
         }
       });
     }

@@ -50,6 +50,24 @@ self.addEventListener("push", (event) => {
   );
 });
 
+// Mensagem direta da página (ex.: botão "Testar notificação")
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.tipo === "testar-notificacao") {
+    event.waitUntil(
+      self.registration.showNotification("Transporte Universitário · Divisa Alegre", {
+        body: "Esta é uma notificação de teste do transporte de Divisa Alegre.",
+        icon: "/img/favicon.png",
+        tag: "transporte-universitario-teste",
+        badge: "/img/favicon.png",
+        data: { url: "/" },
+        actions: [
+          { action: "abrir", title: "Abrir site" },
+        ],
+      })
+    );
+  }
+});
+
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const url = event.notification.data && event.notification.data.url ? event.notification.data.url : "/";
