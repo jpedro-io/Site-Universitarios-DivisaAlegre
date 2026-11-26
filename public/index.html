@@ -82,7 +82,7 @@
     padding: 0 max(16px, env(safe-area-inset-left, 0px));
   }
   .cabecalho__marca { display: none; }
-  .cabecalho__logo img { height: 77px; width: auto; }
+  .cabecalho__logo img { height: 115px; width: auto; }
 
   .menu-botao {
     position: absolute;
@@ -165,8 +165,9 @@
     color: rgba(255, 255, 255, 0.55);
     font-size: 0.76rem;
     line-height: 1.5;
+    text-align: center;
   }
-  .menu__rodape img { height: 56px; width: auto; margin-bottom: 10px; }
+  .menu__rodape img { height: 112px; width: auto; margin: 0 auto 10px; display: block; }
   .fundo-menu {
     position: fixed;
     inset: 0;
@@ -792,7 +793,7 @@
     align-items: center;
     gap: 10px;
   }
-  .rodape img { height: 28px; width: auto; margin: 0; }
+  .rodape img { height: 70px; width: auto; margin: 0; }
   .rodape nav { display: flex; gap: 8px 18px; justify-content: center; flex-wrap: wrap; margin: 0; }
   .rodape nav a { color: var(--branco); text-decoration: none; font-size: 0.9rem; opacity: 0.9; }
   .rodape nav a:hover { color: var(--branco); text-decoration: underline; opacity: 1; }
@@ -813,7 +814,7 @@
   /* ============================ MOBILE ============================ */
   @media (max-width: 720px) {
     body { padding-block: 24px; }
-    .cabecalho__logo img { height: 64px; }
+    .cabecalho__logo img { height: 96px; }
     .cabecalho__interno { padding-left: 60px; }
     .heroi { padding-top: calc(60px + 30px); }
     .heroi__duplo { grid-template-columns: 1fr; }
@@ -1156,6 +1157,11 @@
         const ativo = btnLista.classList.toggle("ativo");
         salvarPreferencias();
         if (ativo) {
+          if (!ehDiaUtil()) {
+            btnLista.classList.remove("ativo");
+            btnLista.textContent = "Notificação de lista";
+            return alert("Notificações só funcionam de segunda a sexta-feira.");
+          }
           await inicializarNotificacoes("lista");
           btnLista.textContent = "Notificação de lista (ativa)";
         } else {
@@ -1170,6 +1176,11 @@
         const ativo = btnTransito.classList.toggle("ativo");
         salvarPreferencias();
         if (ativo) {
+          if (!ehDiaUtil()) {
+            btnTransito.classList.remove("ativo");
+            btnTransito.textContent = "Notificação de Trânsito";
+            return alert("Notificações só funcionam de segunda a sexta-feira.");
+          }
           await inicializarNotificacoes("transito");
           btnTransito.textContent = "Notificação de Trânsito (ativa)";
         } else {
@@ -1179,9 +1190,20 @@
       });
     }
 
+    // Notificações só de segunda a sexta
+    function ehDiaUtil() {
+      const d = new Date();
+      const dia = d.getDay(); // 0 = domingo, 6 = sábado
+      return dia >= 1 && dia <= 5;
+    }
+
     const btnTestar = document.getElementById("btn-testar-notificacao");
     if (btnTestar) {
       btnTestar.addEventListener("click", async function () {
+        if (!ehDiaUtil()) {
+          return alert("Notificações só funcionam de segunda a sexta-feira.");
+        }
+
         // 1. Navegador não suporta Service Worker ou notificações (ex.: Safari iOS antigo)
         if (!("serviceWorker" in navigator) || !("Notification" in window)) {
           return alert("Este navegador não suporta notificações.");

@@ -85,7 +85,7 @@
     padding: 0 max(16px, env(safe-area-inset-left, 0px));
   }
   .cabecalho__logo { display: inline-flex; align-items: center; }
-  .cabecalho__logo img { height: 77px; width: auto; }
+  .cabecalho__logo img { height: 115px; width: auto; }
   .cabecalho__marca { display: none; }
 
   .menu-botao {
@@ -167,8 +167,9 @@
     color: rgba(255, 255, 255, 0.55);
     font-size: 0.76rem;
     line-height: 1.5;
+    text-align: center;
   }
-  .menu__rodape img { height: 72px; width: auto; margin-bottom: 10px; }
+  .menu__rodape img { height: 144px; width: auto; margin: 0 auto 10px; display: block; }
   .fundo-menu {
     position: fixed;
     inset: 0;
@@ -325,7 +326,7 @@
     align-items: center;
     gap: 12px;
   }
-  .rodape img { height: 32px; width: auto; margin: 0; }
+  .rodape img { height: 80px; width: auto; margin: 0; }
   .rodape nav { display: flex; gap: 8px 18px; justify-content: center; flex-wrap: wrap; margin: 0; }
   .rodape nav a { color: var(--branco); text-decoration: none; font-size: 0.9rem; opacity: 0.9; }
   .rodape nav a:hover { color: var(--branco); text-decoration: underline; opacity: 1; }
@@ -347,7 +348,7 @@
   @media (max-width: 720px) {
     body { padding-block: 24px; }
     .cabecalho__marca { display: none; }
-    .cabecalho__logo img { height: 64px; }
+    .cabecalho__logo img { height: 96px; }
     .cabecalho__interno { padding-left: 60px; }
     .secao { padding: clamp(40px, 5vw, 64px) 0; }
     .faixa { margin-top: 0; padding: clamp(44px, 6vw, 72px) 0 clamp(36px, 5vw, 56px); }
