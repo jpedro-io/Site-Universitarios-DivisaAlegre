@@ -1,16 +1,808 @@
 <!DOCTYPE html>
-<!-- =====================================================================
-     ARQUIVO: public/index.html   ->   PAGINA INICIAL (a porta de entrada)
-     ===================================================================== -->
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="light">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Comissão de Transporte dos Universitários de Divisa Alegre - MG</title>
-<meta name="description" content="Transporte universitário de Divisa Alegre (MG) para Vitória da Conquista (BA): clima, rota e informações para os universitários.">
-<meta name="theme-color" content="#0a1436">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Transporte Universitário · Divisa Alegre → Vitória da Conquista</title>
+<meta name="description" content="Transporte universitário de Divisa Alegre (MG) para Vitória da Conquista (BA): horário de saída, clima do destino, mapa da rota e informações para os estudantes.">
+<meta name="theme-color" content="#ffffff">
 <link rel="icon" href="img/favicon.png">
-<link rel="stylesheet" href="css/style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600&display=swap" rel="stylesheet">
+<style>
+  /* =========================================================================
+     INDEX — Transporte Universitário de Divisa Alegre - MG
+     Imagens reais de public/img. Um único acento: azul-royal #1b3aa0.
+     ========================================================================= */
+  :root {
+    --azul-royal: #1b3aa0;
+    --azul-escuro: #0a1436;
+    --fundo: #ffffff;
+    --fundo-suave: #f4f6fb;
+    --branco: #ffffff;
+    --vidro: rgba(255, 255, 255, 0.80);
+    --borda: rgba(10, 20, 54, 0.14);
+    --borda-fraco: rgba(10, 20, 54, 0.08);
+    --sombra: 0 10px 30px rgba(10, 20, 54, 0.10);
+    --texto: #0a1436;
+    --texto-fraco: #5b6b8f;
+    --texto-suave: #1e2a4a;
+    --raio: 14px;
+    --raio-menor: 10px;
+    --transicao: 0.2s ease;
+    --fonte-titulo: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --fonte-texto: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: var(--fonte-texto);
+    color: var(--texto);
+    background: var(--fundo);
+    line-height: 1.6;
+    font-size: 1rem;
+    color-scheme: light;
+    overflow-x: hidden;
+  }
+  ::selection { background: var(--azul-royal); color: var(--branco); }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--fundo-suave); }
+  ::-webkit-scrollbar-thumb { background: var(--borda); border-radius: 6px; border: 3px solid var(--fundo-suave); }
+  h1, h2, h3, h4 { font-family: var(--fonte-titulo); margin: 0 0 0.7rem; line-height: 1.15; letter-spacing: -0.01em; font-weight: 600; }
+  p { margin: 0 0 1rem; }
+  a { color: var(--azul-royal); text-decoration: none; }
+  strong { font-weight: 600; }
+  img { display: block; max-width: 100%; }
+
+  /* ============================ CABECALHO ============================ */
+  .cabecalho {
+    position: fixed;
+    inset: env(safe-area-inset-top, 0px) 0 auto 0;
+    z-index: 60;
+    background: rgba(10, 20, 54, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(27, 58, 160, 0.35);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.30);
+    display: flex;
+    align-items: center;
+    padding: 0 max(16px, env(safe-area-inset-left, 0px));
+  }
+  .cabecalho__interno {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    justify-content: center;
+    margin: 0 auto;
+    padding: 0 max(16px, env(safe-area-inset-left, 0px));
+  }
+  .cabecalho__marca { display: none; }
+  .cabecalho__logo img { height: 48px; width: auto; }
+
+  .menu-botao {
+    position: absolute;
+    left: max(16px, env(safe-area-inset-left, 0px));
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    background: var(--fundo-suave);
+    border: 1px solid var(--borda);
+    border-radius: var(--raio-menor);
+    cursor: pointer;
+    padding: 0;
+    transition: background var(--transicao), border-color var(--transicao);
+  }
+  .menu-botao:hover { background: rgba(10, 20, 54, 0.05); }
+  .menu-botao:focus-visible { outline: 2px solid var(--azul-royal); outline-offset: 3px; }
+  .menu-botao span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--texto);
+    transition: transform var(--transicao), opacity var(--transicao);
+  }
+  body.menu-aberto .menu-botao span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+  body.menu-aberto .menu-botao span:nth-child(2) { opacity: 0; }
+  body.menu-aberto .menu-botao span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+  /* ============================ MENU LATERAL ============================ */
+  .menu {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(320px, 88vw);
+    background: var(--azul-escuro);
+    z-index: 70;
+    transform: translateX(-102%);
+    transition: transform var(--transicao);
+    padding: calc(60px + 24px) 24px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-right: 1px solid rgba(27, 58, 160, 0.15);
+  }
+  body.menu-aberto main { filter: blur(6px); pointer-events: none; }
+  body.menu-aberto .cabecalho { filter: blur(6px); }
+  body.menu-aberto .rodape { filter: blur(6px); pointer-events: none; }
+  body.menu-aberto .menu { transform: translateX(0); }
+  .menu__titulo {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  .menu a {
+    color: var(--branco);
+    text-decoration: none;
+    font-size: 1rem;
+    padding: 12px 16px;
+    border-radius: var(--raio-menor);
+    border-left: 3px solid transparent;
+    transition: background var(--transicao), border-color var(--transicao), padding-left var(--transicao);
+    display: block;
+  }
+  .menu a:hover { background: rgba(255, 255, 255, 0.06); padding-left: 22px; }
+  .menu a.ativo {
+    background: rgba(255, 255, 255, 0.08);
+    border-left-color: var(--azul-royal);
+    font-weight: 600;
+    color: var(--branco);
+  }
+  .menu__rodape {
+    margin-top: auto;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.76rem;
+    line-height: 1.5;
+  }
+  .menu__rodape img { height: 56px; width: auto; margin-bottom: 10px; }
+  .fundo-menu {
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 8, 24, 0.50);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transicao);
+    z-index: 65;
+  }
+  body.menu-aberto .fundo-menu { opacity: 1; pointer-events: auto; }
+
+  /* ============================ HERO ============================ */
+  .heroi {
+    position: relative;
+    min-height: 64svh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: calc(60px + 32px) 0 40px;
+    overflow: hidden;
+    width: 100%;
+  }
+  .heroi__foto {
+    position: absolute;
+    inset: 0;
+    background: url("../img/van.jpg") center/cover no-repeat;
+    z-index: 0;
+    opacity: 1;
+  }
+  .heroi__sombra {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 20, 54, 0.82);
+    z-index: 1;
+  }
+
+  .heroi__conteudo {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 980px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    text-align: center;
+    opacity: 0;
+    animation: entrarHero 1s cubic-bezier(0.23, 1, 0.32, 1) 0.2s both;
+  }
+  @keyframes entrarHero {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  .heroi__frase {
+    color: var(--branco);
+    font-size: clamp(1.6rem, 1.2rem + 2.6vw, 2.6rem);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0;
+    max-width: 42ch;
+    line-height: 1.15;
+  }
+
+  .horario-saida {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--branco);
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.30);
+    border-radius: 999px;
+    padding: 0.7rem 1.25rem;
+  }
+  .horario-saida strong { color: var(--branco); }
+  .horario-saida svg { stroke: var(--branco); width: 20px; height: 20px; display: block; }
+
+  /* Clima + Mapa lado a lado */
+  .heroi__duplo {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    width: 100%;
+    max-width: 1040px;
+    margin-top: 6px;
+  }
+
+  /* Superfície de vidro — só sobre fundo escuro do hero */
+  .vidro {
+    background: var(--vidro);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid var(--borda);
+    border-radius: var(--raio);
+    box-shadow: var(--sombra);
+  }
+
+  /* Clima */
+  .clima {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: rgba(10, 20, 54, 0.85);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(27, 58, 160, 0.30);
+    border-radius: var(--raio);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.30);
+    padding: 20px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .clima__rotulo {
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.90);
+    margin-bottom: 10px;
+    text-align: left;
+  }
+  .clima__principal {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+    text-align: left;
+  }
+  .clima__temperatura {
+    font-size: clamp(2.4rem, 1.6rem + 3vw, 3.4rem);
+    font-weight: 600;
+    line-height: 1;
+    color: var(--branco);
+  }
+  .clima__descricao {
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.95);
+    white-space: nowrap;
+  }
+  .clima__icone { width: 60px; height: 60px; flex: none; color: var(--branco); }
+  .clima__detalhes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    border-top: 1px solid var(--borda-fraco);
+    padding-top: 10px;
+    text-align: left;
+  }
+  .clima__detalhe { font-size: 0.78rem; color: rgba(255, 255, 255, 0.90); }
+  .clima__detalhe strong {
+    display: block;
+    font-size: 0.95rem;
+    color: var(--branco);
+    font-weight: 600;
+  }
+  .clima__fonte {
+    margin-top: 10px;
+    font-size: 0.68rem;
+    color: rgba(255, 255, 255, 0.90);
+    text-align: left;
+  }
+  .clima__carregando { color: rgba(255, 255, 255, 0.90); font-size: 0.88rem; padding: 12px 0; text-align: center; }
+
+  /* Mapa */
+  .mapa-rota {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: rgba(10, 20, 54, 0.85);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(27, 58, 160, 0.30);
+    border-radius: var(--raio);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.30);
+    overflow: visible;
+    padding: 12px 20px 20px;
+    width: 100%;
+  }
+  .mapa-rota__rotulo {
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.90);
+    margin-bottom: 8px;
+    text-align: left;
+  }
+  .mapa-rota__frame {
+    flex: 1;
+    min-height: 300px;
+    border-radius: var(--raio-menor);
+    overflow: visible;
+    border: 1px solid var(--borda);
+    box-shadow: var(--sombra);
+    background: var(--fundo-suave);
+  }
+  .mapa-rota iframe { border: 0; width: 100%; height: 100%; display: block; }
+
+  /* ============================ NOTIFICACOES ============================ */
+  .notificacoes {
+    position: relative;
+    z-index: 2;
+    margin-top: 1.6rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 700px;
+    padding: 0 4px;
+  }
+  .notificacoes__rotulo {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--texto);
+    letter-spacing: -0.01em;
+  }
+  .notificacoes__botoes {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+  }
+  .notificacoes button {
+    flex: 1;
+    padding: 1rem 1.6rem;
+    background: var(--branco);
+    color: var(--texto);
+    border: 1px solid var(--borda);
+    border-radius: var(--raio-menor);
+    font-family: var(--fonte-texto);
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background var(--transicao), border-color var(--transicao);
+  }
+  .notificacoes button:hover { background: var(--fundo-suave); border-color: var(--azul-royal); }
+  .notificacoes button:active { background: rgba(10, 20, 54, 0.05); }
+  .notificacoes button.secondary {
+    background: var(--branco);
+    color: var(--texto);
+    border: 1px solid var(--borda);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  /* ============================ FAIXA DE SECAO ============================ */
+  .faixa {
+    position: relative;
+    padding: clamp(48px, 6vw, 80px) 0 clamp(36px, 5vw, 60px);
+    background: var(--azul-royal);
+    color: var(--branco);
+    text-align: center;
+    overflow: hidden;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  }
+  .faixa__conteudo {
+    position: relative;
+    z-index: 2;
+    width: min(880px, 92%);
+    margin: 0 auto;
+    opacity: 0;
+    animation: entrarHero 0.9s cubic-bezier(0.23, 1, 0.32, 1) 0.15s both;
+  }
+  .faixa h1 { font-size: clamp(1.9rem, 1.2rem + 3vw, 3rem); margin-bottom: 10px; color: var(--branco); }
+  .faixa p { color: rgba(255, 255, 255, 0.92); max-width: 60ch; margin: 0 auto; font-size: 1rem; }
+
+  /* ============================ CONTEUDO GERAL ============================ */
+  .secao {
+    padding: clamp(44px, 5vw, 72px) 0;
+    position: relative;
+  }
+  .secao__wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 max(16px, env(safe-area-inset-left, 0px));
+    width: 100%;
+  }
+  .secao__etiqueta {
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    font-weight: 600;
+    color: var(--texto-fraco);
+    margin-bottom: 8px;
+    display: inline-block;
+  }
+  .secao__titulo {
+    font-size: clamp(1.4rem, 1rem + 1.6vw, 2.2rem);
+    color: var(--texto);
+    margin-bottom: 8px;
+  }
+  .secao__subtitulo {
+    color: var(--texto-suave);
+    margin-bottom: 24px;
+    max-width: 60ch;
+    font-size: 0.95rem;
+  }
+  .bloco-titulo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 36px 0 18px;
+    font-size: 1.1rem;
+    color: var(--texto);
+  }
+  .bloco-titulo span {
+    flex: 1;
+    height: 1px;
+    background: var(--borda-fraco);
+  }
+  .bloco-titulo::before {
+    content: "";
+    width: 8px;
+    height: 24px;
+    border-radius: 4px;
+    background: var(--texto);
+  }
+
+  /* Cards de informacoes (index) — iguais, sem brincadeira */
+  .informacoes__grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  }
+  .card-info {
+    background: var(--vidro);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--borda);
+    border-radius: var(--raio);
+    padding: 1.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    box-shadow: var(--sombra);
+  }
+  .card-info h3 { font-size: 1.25rem; color: var(--texto); margin: 0; }
+  .card-info p { color: var(--texto-suave); font-size: 0.92rem; margin: 0; }
+  .card-info a {
+    margin-top: auto;
+    display: inline-block;
+    padding: 0.6rem 1.2rem;
+    border: 1px solid var(--borda);
+    border-radius: 26px;
+    color: var(--texto);
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: background var(--transicao), color var(--transicao), border-color var(--transicao);
+  }
+  .card-info a:hover { background: var(--azul-escuro); color: var(--branco); border-color: var(--azul-escuro); }
+
+  /* Botoes uteis abaixo dos cards na pagina inicial */
+  .botoes-uteis {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    margin-top: 32px;
+    flex-wrap: wrap;
+  }
+  .btn-utile {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--azul-royal);
+    color: var(--branco);
+    padding: 1rem 1.6rem;
+    border-radius: var(--raio-menor);
+    font-family: var(--fonte-texto);
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: background var(--transicao);
+  }
+  .btn-utile:hover { background: var(--azul-escuro); }
+
+  /* Regras — lista criterios */
+  .regras-caixa { max-width: 860px; margin-inline: auto; }
+  .criterios {
+    list-style: none;
+    counter-reset: item;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+  }
+  .criterios li {
+    counter-increment: item;
+    position: relative;
+    padding: 16px 20px 16px 64px;
+    background: var(--vidro);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--borda);
+    border-left: 3px solid var(--azul-escuro);
+    border-radius: var(--raio-menor);
+    box-shadow: var(--sombra);
+  }
+  .criterios li:hover { border-left-color: var(--azul-royal); }
+  .criterios li::before {
+    content: counter(item);
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--azul-escuro);
+    color: var(--branco);
+    display: grid;
+    place-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  /* Avisos */
+  :root {
+    --aviso-destaque: #1b3aa0;
+    --aviso-prioridade-maxima: #c0392b;
+    --aviso-prioridade-media: #e67e22;
+    --aviso-carona: #27ae60;
+  }
+  .avisos {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+  }
+  .avisos li {
+    position: relative;
+    padding: 15px 20px 15px 48px;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid var(--borda-fraco);
+    border-radius: var(--raio-menor);
+    box-shadow: 0 8px 20px rgba(10, 20, 54, 0.06);
+  }
+  .avisos li::before {
+    content: "";
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--texto-fraco);
+    box-shadow: 0 0 0 4px rgba(10, 20, 54, 0.10);
+  }
+  .avisos li.destaque { border-color: rgba(10, 20, 54, 0.25); background: var(--fundo-suave); }
+  .avisos li.destaque::before { background: var(--azul-escuro); box-shadow: 0 0 0 4px rgba(10, 20, 54, 0.20); }
+  .avisos b { color: var(--texto); }
+
+  .avisos li.aviso-vermelho {
+    border-left-color: var(--aviso-prioridade-maxima);
+    background: rgba(192, 57, 43, 0.06);
+  }
+  .avisos li.aviso-vermelho::before { background: var(--aviso-prioridade-maxima); box-shadow: 0 0 0 5px rgba(192, 57, 43, 0.20); }
+
+  .avisos li.prioridade-maxima {
+    border-left-color: var(--aviso-prioridade-maxima);
+    background: rgba(192, 57, 43, 0.06);
+  }
+  .avisos li.prioridade-maxima::before { background: var(--aviso-prioridade-maxima); box-shadow: 0 0 0 5px rgba(192, 57, 43, 0.20); }
+  .avisos li.prioridade-media {
+    border-left-color: var(--aviso-prioridade-media);
+    background: rgba(230, 126, 34, 0.06);
+  }
+  .avisos li.prioridade-media::before { background: var(--aviso-prioridade-media); box-shadow: 0 0 0 5px rgba(230, 126, 34, 0.20); }
+  .avisos li.carona {
+    border-left-color: var(--aviso-carona);
+    background: rgba(39, 174, 96, 0.06);
+  }
+  .avisos li.carona::before { background: var(--aviso-carona); box-shadow: 0 0 0 5px rgba(39, 174, 96, 0.20); }
+
+  /* Universidades — cards com fotos reais */
+  .grade-universidades {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  .universidade {
+    background: var(--vidro);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--borda);
+    border-radius: var(--raio);
+    overflow: hidden;
+    box-shadow: var(--sombra);
+    display: flex;
+    flex-direction: column;
+  }
+  .universidade__foto {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    background: var(--fundo-suave);
+  }
+  .universidade__foto img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .universidade__foto::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(10, 20, 54, 0.06), rgba(10, 20, 54, 0.35));
+  }
+  .universidade__sigla {
+    position: absolute;
+    left: 16px;
+    bottom: 14px;
+    z-index: 2;
+    color: var(--branco);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 600;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  }
+  .universidade__corpo {
+    padding: 20px 22px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+  }
+  .universidade__nome { font-size: 1.08rem; color: var(--texto); margin: 0; }
+  .dados { margin: 0; display: grid; gap: 8px; }
+  .dados div { display: grid; grid-template-columns: 80px 1fr; gap: 8px; align-items: baseline; }
+  .dados dt {
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    color: var(--texto-fraco);
+    font-weight: 600;
+  }
+  .dados dd { margin: 0; font-size: 0.9rem; color: var(--texto-suave); }
+
+  /* Manual — ferramentas */
+  .grade-ferramentas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  .ferramenta {
+    background: var(--vidro);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--borda);
+    border-radius: var(--raio);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: var(--sombra);
+  }
+  .ferramenta__nome { font-size: 1.06rem; color: var(--texto); margin: 0 0 6px; }
+  .ferramenta p { font-size: 0.92rem; color: var(--texto-suave); margin: 0; }
+  .ferramenta__links {
+    margin-top: auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: 1px solid var(--borda-fraco);
+  }
+  .ferramenta__links a {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    color: var(--texto);
+    border: 1px solid var(--borda);
+    background: rgba(255, 255, 255, 0.55);
+    padding: 8px 14px;
+    border-radius: 26px;
+    transition: background var(--transicao), color var(--transicao), border-color var(--transicao);
+  }
+  .ferramenta__links a:hover { background: var(--azul-escuro); color: var(--branco); border-color: var(--azul-escuro); }
+
+  /* ============================ RODAPE ============================ */
+  .rodape {
+    background: var(--azul-escuro);
+    color: var(--branco);
+    padding: 20px 0 16px;
+    text-align: center;
+    border-top: none;
+    margin-top: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .rodape img { height: 28px; width: auto; margin: 0; }
+  .rodape nav { display: flex; gap: 8px 18px; justify-content: center; flex-wrap: wrap; margin: 0; }
+  .rodape nav a { color: var(--branco); text-decoration: none; font-size: 0.9rem; opacity: 0.9; }
+  .rodape nav a:hover { color: var(--branco); text-decoration: underline; opacity: 1; }
+  .rodape small { display: block; font-size: 0.72rem; color: rgba(255,255,255,0.7); margin: 0; }
+
+  /* ============================ TRANSICAO ENTRE PAGINAS ============================ */
+  .transicao {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    pointer-events: none;
+    background: linear-gradient(135deg, var(--fundo-suave), var(--branco));
+    opacity: 0;
+    transition: opacity 0.32s ease;
+  }
+  body.saindo .transicao { opacity: 1; }
+
+  /* ============================ MOBILE ============================ */
+  @media (max-width: 720px) {
+    body { padding-block: 24px; }
+    .cabecalho__logo img { height: 40px; }
+    .heroi { padding-top: calc(60px + 30px); }
+    .heroi__duplo { grid-template-columns: 1fr; }
+    .clima, .mapa-rota { opacity: 1; }
+    .notificacoes__botoes { flex-direction: column; }
+    .secao { padding: clamp(36px, 5vw, 56px) 0; }
+    .faixa { padding: clamp(38px, 5vw, 60px) 0 clamp(30px, 5vw, 48px); }
+    .universidade__foto { aspect-ratio: 16 / 9; }
+    .dados div { grid-template-columns: 1fr; gap: 2px; }
+    .dados dt { text-align: left; }
+    .dados dd { text-align: left; }
+    .informacoes__grid, .grade-ferramentas { grid-template-columns: 1fr; }
+    .bloco-titulo { font-size: 1rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition-duration: 0.01s !important; }
+    .heroi__conteudo, .faixa__conteudo { opacity: 1; transform: none; }
+  }
+</style>
 </head>
 <body>
 
@@ -19,9 +811,12 @@
   <button class="menu-botao" aria-label="Abrir menu de navegação" aria-controls="menu-principal" aria-expanded="false">
     <span></span><span></span><span></span>
   </button>
-  <a class="cabecalho__logo" href="index.html" aria-label="Página inicial">
-    <img src="img/logo-contorno.png" alt="Comissão de Transporte dos Universitários de Divisa Alegre - MG">
-  </a>
+  <div class="cabecalho__interno">
+    <a class="cabecalho__logo" href="index.html" aria-label="Página inicial">
+      <img src="img/logo-contorno.png" alt="Comissão de Transporte dos Universitários de Divisa Alegre - MG">
+    </a>
+    <div class="cabecalho__marca">Comissão de Transporte dos Universitários de Divisa Alegre - MG</div>
+  </div>
 </header>
 
 <!-- MENU LATERAL -->
@@ -39,80 +834,78 @@
 <button class="fundo-menu" aria-label="Fechar menu" tabindex="-1"></button>
 
 <main>
-  <!-- SEÇÃO DA FOTO, CLIMA E TRÂNSITO -->
+  <!-- HERO: foto da van + frase + horario + clima e mapa lado a lado -->
   <section class="heroi">
     <div class="heroi__foto" aria-hidden="true"></div>
     <div class="heroi__sombra" aria-hidden="true"></div>
 
     <div class="heroi__conteudo">
-      <h1 class="heroi__frase">TRANSPORTE UNIVERSITÁRIO DE DIVISA ALEGRE</h1>
+      <h1 class="heroi__frase">Transporte universitário de Divisa Alegre</h1>
 
-      <!-- Horário de saída fixo -->
       <div class="horario-saida" role="region" aria-label="Horário de saída do transporte">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width: 20px; height: 20px; margin-right: 0.5rem;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
         </svg>
         <strong>Saída da esquina da prefeitura às 16:20</strong> — Divisa Alegre → Vitória da Conquista
       </div>
 
-      <div class="heroi__cards" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem; justify-content: center; align-items: stretch;">
+      <div class="heroi__duplo">
         <!-- CLIMA (esquerda) -->
-        <div class="clima" role="region" aria-label="Clima em Vitória da Conquista" style="flex: 1; min-width: 280px; max-width: 400px;">
+        <div class="clima vidro" role="region" aria-label="Clima em Vitória da Conquista">
+          <p class="clima__rotulo">Clima · Vitória da Conquista - BA</p>
           <div id="clima-conteudo">
             <p class="clima__carregando">Carregando o clima de Vitória da Conquista...</p>
           </div>
         </div>
 
         <!-- MAPA DA ROTA (direita) -->
-        <div class="mapa-rota" role="region" aria-label="Mapa da rota Divisa Alegre → Vitória da Conquista" style="flex: 1; min-width: 280px; max-width: 600px; display: flex; flex-direction: column;">
-          <p style="margin: 0 0 8px; font-size: 0.85rem; font-weight: 700; color: #fff;">Rota do transporte</p>
-          <div style="flex: 1; min-height: 260px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 10px 30px rgba(0,0,0,0.35);">
+        <div class="mapa-rota vidro" role="region" aria-label="Mapa da rota Divisa Alegre → Vitória da Conquista">
+          <p class="mapa-rota__rotulo">Rota do transporte</p>
+          <div class="mapa-rota__frame">
             <iframe src="https://www.google.com/maps/embed?pb=!1m28!1m12!1m3!1d985241.6679821013!2d-41.751193236640255!3d-15.289579819431802!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!4m13!3e0!4m5!1s0x74ecdc5db3650d1%3A0xb12a9e8ec56b0001!2sDivisa%20Alegre%2C%20MG%2C%2039995-000!3m2!1d-15.7244095!2d-41.343293599999996!4m5!1s0x7463b073025e405%3A0x78be45452bd92ae3!2sVit%C3%B3ria%20da%20Conquista%2C%20BA!3m2!1d-14.8577988!2d-40.840075899999995!5e0!3m2!1spt-BR!2sbr!4v1795698059733!5m2!1spt-BR!2sbr" width="600" height="450" style="border:0; width:100%; height:100%; display:block;" allowfullscreen="" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
           </div>
         </div>
       </div>
 
-      <!-- NOTIFICAÇÕES -->
-      <div class="config-notificacoes" style="margin-top: 1.5rem; padding: 1.5rem; background: rgba(20, 30, 60, 0.65); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.15); border-radius: 16px; max-width: 600px; margin-left: auto; margin-right: auto; color: #fff; text-align: center;">
-        <p style="margin: 0 0 1rem; font-size: 1rem; font-weight: 700;">Notificações</p>
-        <button id="btn-notif-lista" style="display: inline-block; width: min(260px, 90%); padding: 0.85rem 1.5rem; background: #fff; color: #101e52; border: none; border-radius: 30px; font-weight: 700; cursor: pointer; margin-bottom: 0.75rem;">
-          Notificação de lista
-        </button>
-        <button id="btn-notif-transito" style="display: inline-block; width: min(260px, 90%); padding: 0.85rem 1.5rem; background: #fff; color: #101e52; border: none; border-radius: 30px; font-weight: 700; cursor: pointer;">
-          Notificação de Trânsito
-        </button>
+      <!-- NOTIFICACOES -->
+      <div class="notificacoes">
+        <p class="notificacoes__rotulo">Notificações</p>
+        <div class="notificacoes__botoes">
+          <button id="btn-notif-lista">Notificação de lista</button>
+          <button id="btn-notif-transito" class="secondary">Notificação de Trânsito</button>
+        </div>
       </div>
-
     </div>
   </section>
 
-  <!-- SEÇÃO DE INFORMAÇÕES -->
-  <section class="informacoes container" style="padding: 4rem 1.5rem;">
-    <p class="informacoes__chapeu" style="font-size: 0.875rem; font-weight: 700; letter-spacing: 0.1em; color: #0a1436; text-transform: uppercase; margin-bottom: 0.5rem;">Informações</p>
-    <h2 class="informacoes__titulo" style="font-size: 1.75rem; color: #0a1436; margin-bottom: 1rem;">Tudo o que o universitário precisa saber</h2>
-    <p class="informacoes__descricao" style="color: #4a5568; margin-bottom: 2rem; max-width: 600px;">Consulte as regras de uso do transporte, conheça as universidades atendidas em Vitória da Conquista e veja as ferramentas e documentos indicados para os estudantes.</p>
+  <!-- INFORMACOES (apenas na inicial) -->
+  <section class="secao">
+    <div class="secao__wrap">
+      <div class="secao__etiqueta">Informações</div>
+      <h2 class="secao__titulo">Tudo o que o universitário precisa saber</h2>
+      <p class="secao__subtitulo">Regras de uso do transporte, universidades atendidas em Vitória da Conquista e documentos úteis para o dia a dia.</p>
 
-    <div class="informacoes__grid" style="display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
-      
-      <!-- Card Regras -->
-      <div class="card-info" style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
-        <h3 style="font-size: 1.25rem; color: #0a1436; margin-bottom: 0.75rem;">Regras e critérios</h3>
-        <p style="color: #4a5568; margin-bottom: 1.5rem; font-size: 0.95rem;">Ordem de prioridade da lista, avisos sobre horários, entrada no transporte e o que é considerado prioridade máxima, média ou carona.</p>
-        <a href="regras.html" class="botao-secundario" style="display: inline-block; padding: 0.5rem 1rem; border: 1px solid #0a1436; border-radius: 20px; color: #0a1436; text-decoration: none; font-weight: 600;">Ver as regras</a>
+      <div class="informacoes__grid">
+        <div class="card-info">
+          <h3>Regras e critérios</h3>
+          <p>Ordem de prioridade da lista, avisos sobre horários, entrada no transporte e o que é prioridade máxima, média ou carona.</p>
+          <a href="regras.html">Ver as regras</a>
+        </div>
+        <div class="card-info">
+          <h3>Universidades</h3>
+          <p>Sete instituições atendidas em Vitória da Conquista, com endereço, fundação e principais cursos de cada uma.</p>
+          <a href="universidades.html">Ver as universidades</a>
+        </div>
+        <div class="card-info">
+          <h3>Manual dos Universitários</h3>
+          <p>Plataformas de estudo com certificado, ferramentas de organização e modelo de declaração de atraso.</p>
+          <a href="manual.html">Abrir o manual</a>
+        </div>
       </div>
 
-      <!-- Card Universidades -->
-      <div class="card-info" style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
-        <h3 style="font-size: 1.25rem; color: #0a1436; margin-bottom: 0.75rem;">Universidades</h3>
-        <p style="color: #4a5568; margin-bottom: 1.5rem; font-size: 0.95rem;">Sete instituições atendidas em Vitória da Conquista, com endereço, ano de fundação na cidade e os principais cursos de cada uma.</p>
-        <a href="universidades.html" class="botao-secundario" style="display: inline-block; padding: 0.5rem 1rem; border: 1px solid #0a1436; border-radius: 20px; color: #0a1436; text-decoration: none; font-weight: 600;">Ver as universidades</a>
-      </div>
-
-      <!-- Card Manual -->
-      <div class="card-info" style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
-        <h3 style="font-size: 1.25rem; color: #0a1436; margin-bottom: 0.75rem;">Manual dos Universitários</h3>
-        <p style="color: #4a5568; margin-bottom: 1.5rem; font-size: 0.95rem;">Plataformas de estudo com certificado, ferramentas de organização e produtividade e o modelo de declaração de atraso no transporte.</p>
-        <a href="manual.html" class="botao-secundario" style="display: inline-block; padding: 0.5rem 1rem; border: 1px solid #0a1436; border-radius: 20px; color: #0a1436; text-decoration: none; font-weight: 600;">Abrir o manual</a>
+      <div class="botoes-uteis">
+        <a href="https://forms.gle/L5oaCDUf7RbagcjPA" target="_blank" rel="noopener noreferrer" class="btn-utile">Formulário de cadastro</a>
+        <a href="https://chat.whatsapp.com/BdEqn0D7EPjD7T2jMUiHlj" target="_blank" rel="noopener noreferrer" class="btn-utile">Grupo do WhatsApp</a>
       </div>
 
     </div>
@@ -122,19 +915,188 @@
 
 <!-- RODAPE -->
 <footer class="rodape">
-  <div class="container">
-    <img src="img/logo-contorno.png" alt="Comissão de Transporte dos Universitários de Divisa Alegre - MG">
-    <nav aria-label="Rodapé">
-      <a href="index.html">Página inicial</a>
-      <a href="regras.html">Regras e Critérios</a>
-      <a href="universidades.html">Universidades</a>
-      <a href="manual.html">Manual dos Universitários</a>
-    </nav>
-    <small>Comissão de Transporte dos Universitários de Divisa Alegre - MG · <span data-ano></span></small>
-  </div>
+  <img src="img/logo-contorno.png" alt="Comissão de Transporte dos Universitários de Divisa Alegre - MG">
+  <nav aria-label="Rodapé">
+    <a href="index.html">Página inicial</a>
+    <a href="regras.html">Regras e Critérios</a>
+    <a href="universidades.html">Universidades</a>
+    <a href="manual.html">Manual dos Universitários</a>
+  </nav>
+  <small>Comissão de Transporte dos Universitários de Divisa Alegre - MG · <span data-ano></span></small>
 </footer>
 
 <div class="transicao" aria-hidden="true"></div>
-<script src="js/main.js"></script>
+<script>
+  (function () {
+    "use strict";
+
+    const botaoMenu = document.querySelector(".menu-botao");
+    const fundoMenu = document.querySelector(".fundo-menu");
+    function fecharMenu() { document.body.classList.remove("menu-aberto"); }
+    function alternarMenu() { document.body.classList.toggle("menu-aberto"); }
+    if (botaoMenu) {
+      botaoMenu.addEventListener("click", alternarMenu);
+      botaoMenu.setAttribute("aria-expanded", "false");
+    }
+    if (fundoMenu) fundoMenu.addEventListener("click", fecharMenu);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") fecharMenu(); });
+
+    document.addEventListener("click", function (e) {
+      const a = e.target.closest("a");
+      if (!a) return;
+      const href = a.getAttribute("href") || "";
+      const externo = a.target === "_blank" || /^(https?:|mailto:|tel:|#)/i.test(href);
+      if (externo || !/\.html$/i.test(href)) return;
+      e.preventDefault();
+      fecharMenu();
+      document.body.classList.add("saindo");
+      setTimeout(function () { window.location.href = href; }, 260);
+    });
+    window.addEventListener("pageshow", function () { document.body.classList.remove("saindo"); });
+    setTimeout(function () { document.body.classList.add("pronto"); }, 40);
+
+    /* Clima — mesmo endpoint /api/clima do site */
+    var ICONES = {
+      sol: '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><circle cx="32" cy="32" r="12" fill="none" stroke="currentColor"/><path d="M32 6v8M32 50v8M6 32h8M50 32h8M13.6 13.6l5.7 5.7M44.7 44.7l5.7 5.7M50.4 13.6l-5.7 5.7M19.3 44.7l-5.7 5.7"/></svg>',
+      solNuvem: '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><circle cx="24" cy="24" r="9" fill="none" stroke="currentColor"/><path d="M24 6v6M24 36v6M6 24h6M36 24h6M11.3 11.3l4.2 4.2M32.5 32.5l4.2 4.2M36.7 11.3l-4.2 4.2M15.5 32.5l-4.2 4.2"/><path d="M22 50h22a10 10 0 0 0 .6-19.9A14 14 0 0 0 18 34" fill="currentColor" stroke="none"/></svg>',
+      nuvem: '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-linejoin="round"><path d="M18 48h26a11 11 0 0 0 .7-21.9A15 15 0 0 0 16.5 30A9.5 9.5 0 0 0 18 48Z" fill="currentColor" stroke="none"/></svg>',
+      nevoa: '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M18 40h26a11 11 0 0 0 .7-21.9A15 15 0 0 0 16.5 22A9.5 9.5 0 0 0 18 40Z" fill="currentColor" stroke="none"/><path d="M12 48h40M18 56h32"/></svg>',
+      chuva: '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 38h26a11 11 0 0 0 .7-21.9A15 15 0 0 0 16.5 20A9.5 9.5 0 0 0 18 38Z" fill="currentColor" stroke="none"/><path d="M22 46l-3 10M32 46l-3 10M42 46l-3 10"/></svg>',
+      trovoada: '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 38h26a11 11 0 0 0 .7-21.9A15 15 0 0 0 16.5 20A9.5 9.5 0 0 0 18 38Z" fill="currentColor" stroke="none"/><path d="M32 42l-6 12h8l-4 10" stroke="currentColor"/></svg>',
+      neve: '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 38h26a11 11 0 0 0 .7-21.9A15 15 0 0 0 16.5 20A9.5 9.5 0 0 0 18 38Z" fill="currentColor" stroke="none"/><path d="M24 48v10M20 53l8-4M28 53l-8-4M40 48v10M36 53l8-4M44 53l-8-4"/></svg>',
+    };
+    function iconePorCodigo(codigo) {
+      if (codigo === 0) return ICONES.sol;
+      if (codigo === 1 || codigo === 2) return ICONES.solNuvem;
+      if (codigo === 3) return ICONES.nuvem;
+      if (codigo === 45 || codigo === 48) return ICONES.nevoa;
+      if (codigo >= 51 && codigo <= 67) return ICONES.chuva;
+      if (codigo >= 71 && codigo <= 77) return ICONES.neve;
+      if (codigo >= 80 && codigo <= 82) return ICONES.chuva;
+      if (codigo >= 85 && codigo <= 86) return ICONES.neve;
+      if (codigo >= 95) return ICONES.trovoada;
+      return ICONES.nuvem;
+    }
+    const cxClima = document.getElementById("clima-conteudo");
+    function numero(v, casas) {
+      if (v === null || v === undefined) return "--";
+      return Number(v).toFixed(casas === undefined ? 0 : casas).replace(".", ",");
+    }
+    function horaLocal(iso) {
+      if (!iso) return "";
+      const d = new Date(iso);
+      return isNaN(d) ? "" : d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    }
+    function carregarClima() {
+      if (!cxClima) return;
+      fetch("/api/clima", { headers: { Accept: "application/json" } })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (!d.ok) throw new Error(d.erro || "Falha ao consultar o clima");
+          cxClima.innerHTML = `
+            <div style="text-align: left; border-bottom: 1px solid rgba(255,255,255,0.25); padding-bottom: 12px; margin-bottom: 16px;">
+              <p style="margin: 0; font-size: 1.1rem; font-weight: 600; color: var(--branco);">${d.cidade} - BA</p>
+              <p style="margin: 0; font-size: 0.85rem; color: rgba(255,255,255,0.85);">Destino dos universitários</p>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 24px;">
+              <span style="font-size: 3.4rem; font-weight: 600; line-height: 1; color: var(--branco);">${numero(d.temperatura)}&deg;</span>
+              <span style="font-size: 1.05rem; font-weight: 500; color: rgba(255,255,255,0.95);">${d.descricao}</span>
+              <div class="clima__icone">${iconePorCodigo(d.codigo)}</div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; border-top: 1px solid rgba(255,255,255,0.25); padding-top: 16px;">
+              <div>
+                <p style="margin: 0; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.80);">UMIDADE</p>
+                <p style="margin: 0; font-size: 1rem; font-weight: 600; color: var(--branco);">${numero(d.umidade)}%</p>
+              </div>
+              <div>
+                <p style="margin: 0; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.80);">VENTO</p>
+                <p style="margin: 0; font-size: 1rem; font-weight: 600; color: var(--branco);">${numero(d.vento)} km/h</p>
+              </div>
+            </div>
+            <p style="margin: 16px 0 0; font-size: 0.75rem; color: rgba(255,255,255,0.80);">Atualizado em ${horaLocal(d.atualizadoEm)}</p>
+          `;
+        })
+        .catch(function (e) {
+          cxClima.innerHTML = '<p style="color:var(--branco); text-align:center;">Não foi possível carregar o clima.<br><small style="color:rgba(255,255,255,0.80);">' + (e.message || "") + '</small></p>';
+        });
+    }
+    carregarClima();
+    if (cxClima) setInterval(carregarClima, 10 * 60 * 1000);
+
+    /* Notificacoes — integração real com Push API (VAPID) */
+    const btnLista = document.getElementById("btn-notif-lista");
+    const btnTransito = document.getElementById("btn-notif-transito");
+
+    async function inicializarNotificacoes() {
+      if (!("serviceWorker" in navigator)) return;
+      if (!("PushManager" in window)) return;
+
+      try {
+        await navigator.serviceWorker.register("/sw.js");
+      } catch (e) {
+        console.warn("[sw] falhou ao registrar:", e);
+      }
+
+      const permissao = await Notification.requestPermission();
+      if (permissao !== "granted") return;
+
+      try {
+        const registro = await navigator.serviceWorker.ready;
+
+        // Busca a chave pública VAPID do servidor
+        const r = await fetch("/api/notificacao", { headers: { Accept: "application/json" } });
+        const dados = await r.json();
+        const chavePublica = dados.publicKey;
+        if (!chavePublica) return;
+
+        const aplicacaoServidor = urlBase64ParaUint8Array(chavePublica);
+        const inscricao = await registro.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: aplicacaoServidor,
+        });
+
+        // Envia a inscrição para o servidor
+        await fetch("/api/notificacao", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(inscricao),
+        });
+      } catch (e) {
+        console.warn("[push] falhou ao inscrever:", e);
+      }
+    }
+
+    function urlBase64ParaUint8Array(base64String) {
+      const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+      const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+      const dadosBrutos = window.atob(base64);
+      const saida = new Uint8Array(dadosBrutos.length);
+      for (let i = 0; i < dadosBrutos.length; i++) {
+        saida[i] = dadosBrutos.charCodeAt(i);
+      }
+      return saida;
+    }
+
+    if (btnLista) {
+      btnLista.addEventListener("click", async function () {
+        await inicializarNotificacoes();
+        alert("Notificação de lista ativada! Você receberá um aviso diário às 10h.");
+      });
+    }
+
+    if (btnTransito) {
+      btnTransito.addEventListener("click", async function () {
+        await inicializarNotificacoes();
+        alert("Notificação de Trânsito ativada! Você receberá um aviso diário às 15h.");
+      });
+    }
+
+    inicializarNotificacoes();
+
+    document.querySelectorAll("[data-ano]").forEach(function (el) {
+      el.textContent = new Date().getFullYear();
+    });
+  })();
+</script>
 </body>
 </html>
