@@ -12,7 +12,7 @@
     { "src": "/(.*)", "dest": "server.js" }
   ],
   "crons": [
-    { "path": "/api/enviar-notificacao?tipo=lista", "schedule": "0 10 * * *", "description": "Notificação de lista às 10h" },
-    { "path": "/api/enviar-notificacao?tipo=transito", "schedule": "0 15 * * *", "description": "Notificação de trânsito às 15h" }
+    { "path": "/api/enviar-notificacao?tipo=lista", "schedule": "0 10 * * *" },
+    { "path": "/api/enviar-notificacao?tipo=transito", "schedule": "0 15 * * *" }
   ]
 }
