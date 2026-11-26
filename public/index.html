@@ -1219,6 +1219,16 @@
       return dia >= 1 && dia <= 5;
     }
 
+    async function garantirServiceWorker() {
+      if (!("serviceWorker" in navigator)) return null;
+      try {
+        await navigator.serviceWorker.register("/sw.js");
+      } catch (e) {
+        console.warn("[sw] falhou ao registrar:", e);
+      }
+      return await navigator.serviceWorker.ready;
+    }
+
     const btnTestar = document.getElementById("btn-testar-notificacao");
     if (btnTestar) {
       btnTestar.addEventListener("click", async function () {
@@ -1246,9 +1256,19 @@
           }
         }
 
-        // 4. Dispara via Service Worker (funciona em Android Chrome e iOS Safari 16.4+)
+        // 4. Garante que o Service Worker esteja registrado e ativo
+        let registro;
         try {
-          const registro = await navigator.serviceWorker.ready;
+          registro = await garantirServiceWorker();
+        } catch (e) {
+          return alert("Não foi possível ativar o Service Worker: " + e.message);
+        }
+        if (!registro) {
+          return alert("Este navegador não possui Service Worker ativo.");
+        }
+
+        // 5. Dispara via Service Worker (funciona em Android Chrome e iOS Safari 16.4+)
+        try {
           await registro.showNotification("Transporte Universitário · Divisa Alegre", {
             body: "Esta é uma notificação de teste do transporte de Divisa Alegre.",
             icon: "/img/favicon.png",
