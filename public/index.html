@@ -414,6 +414,13 @@
     border-color: var(--azul-royal);
   }
   .notificacoes button.ativo:hover { background: #16328a; border-color: #16328a; }
+  .notificacoes button.ativo.secondary {
+    background: var(--azul-royal);
+    color: var(--branco);
+    border-color: var(--azul-royal);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
   .notificacoes button.secondary {
     background: var(--branco);
     color: var(--texto);
@@ -421,6 +428,21 @@
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
   }
+
+  .btn-testar {
+    display: block;
+    margin: 14px auto 0;
+    padding: 6px 14px;
+    background: #f59e0b;
+    color: #fff;
+    border: none;
+    border-radius: var(--raio-menor);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn-testar:hover { opacity: 0.9; }
 
   /* ============================ FAIXA DE SECAO ============================ */
   .faixa {
@@ -883,6 +905,7 @@
           <button id="btn-notif-lista">Notificação de lista</button>
           <button id="btn-notif-transito" class="secondary">Notificação de Trânsito</button>
         </div>
+        <button class="btn-testar" id="btn-testar-notificacao">Testar notificação</button>
       </div>
     </div>
   </section>
@@ -1103,9 +1126,35 @@
       return saida;
     }
 
+    const LS_KEY = "notificacoes-universitario";
+
+    function salvarPreferencias() {
+      try {
+        localStorage.setItem(LS_KEY, JSON.stringify({
+          lista: btnLista.classList.contains("ativo"),
+          transito: btnTransito.classList.contains("ativo"),
+        }));
+      } catch (e) { /* localStorage indisponível */ }
+    }
+
+    function restaurarPreferencias() {
+      try {
+        const gravado = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
+        if (gravado.lista && btnLista && !btnLista.classList.contains("ativo")) {
+          btnLista.classList.add("ativo");
+          btnLista.textContent = "Notificação de lista (ativa)";
+        }
+        if (gravado.transito && btnTransito && !btnTransito.classList.contains("ativo")) {
+          btnTransito.classList.add("ativo");
+          btnTransito.textContent = "Notificação de Trânsito (ativa)";
+        }
+      } catch (e) { /* ignora */ }
+    }
+
     if (btnLista) {
       btnLista.addEventListener("click", async function () {
         const ativo = btnLista.classList.toggle("ativo");
+        salvarPreferencias();
         if (ativo) {
           await inicializarNotificacoes("lista");
           btnLista.textContent = "Notificação de lista (ativa)";
@@ -1119,6 +1168,7 @@
     if (btnTransito) {
       btnTransito.addEventListener("click", async function () {
         const ativo = btnTransito.classList.toggle("ativo");
+        salvarPreferencias();
         if (ativo) {
           await inicializarNotificacoes("transito");
           btnTransito.textContent = "Notificação de Trânsito (ativa)";
@@ -1129,6 +1179,21 @@
       });
     }
 
+    const btnTestar = document.getElementById("btn-testar-notificacao");
+    if (btnTestar) {
+      btnTestar.addEventListener("click", async function () {
+        if (!("Notification" in window)) return alert("Este navegador não suporta notificações.");
+        const perm = await Notification.requestPermission();
+        if (perm === "granted") {
+          new Notification("Transporte Universitário", {
+            body: "Esta é uma notificação de teste do transporte de Divisa Alegre.",
+            icon: "img/favicon.png",
+          });
+        }
+      });
+    }
+
+    restaurarPreferencias();
     inicializarNotificacoes();
 
     document.querySelectorAll("[data-ano]").forEach(function (el) {
