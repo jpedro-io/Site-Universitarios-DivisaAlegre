@@ -408,6 +408,27 @@
   @media (prefers-reduced-motion: reduce) {
     * { animation: none !important; transition-duration: 0.01s !important; }
     .faixa__conteudo { opacity: 1; transform: none; }
+    .reveal {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+
+  /* ============================ SCROLL REVEAL ============================ */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.8s cubic-bezier(0.23, 1, 0.32, 1), transform 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  .reveal.revealed {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* ============================ ANIMACAO DE ENTRADA DA FAIXA ============================ */
+  .faixa__conteudo {
+    animation: entrarSecao 0.8s cubic-bezier(0.23, 1, 0.32, 1) 0.1s both;
   }
 </style>
 </head>
@@ -442,14 +463,14 @@
 
 <main>
   <!-- FAIXA -->
-  <section class="faixa">
+  <section class="faixa reveal">
     <div class="faixa__conteudo">
       <h1>Regras e Critérios</h1>
       <p>Como funciona a ordem da lista e os avisos importantes para quem usa o transporte todos os dias.</p>
     </div>
   </section>
 
-  <section class="secao">
+  <section class="secao reveal">
     <div class="secao__wrap">
 
       <div class="secao__etiqueta">Ordem de prioridade</div>
@@ -465,7 +486,7 @@
         <li>Utilize mais dias na semana</li>
       </ol>
 
-      <div class="bloco-titulo">Avisos<span></span></div>
+      <div class="bloco-titulo reveal">Avisos<span></span></div>
 
       <ul class="avisos">
         <li class="destaque aviso-vermelho">Saída da esquina da prefeitura às <b>16:20</b>.</li>
@@ -527,6 +548,26 @@
     document.querySelectorAll("[data-ano]").forEach(function (el) {
       el.textContent = new Date().getFullYear();
     });
+
+    /* Scroll reveal — apenas quando nao reduz movimento */
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      var observador = new IntersectionObserver(function (entradas) {
+        entradas.forEach(function (entrada) {
+          if (entrada.isIntersecting) {
+            entrada.target.classList.add("revealed");
+            observador.unobserve(entrada.target);
+          }
+        });
+      }, { threshold: 0.15 });
+
+      document.querySelectorAll(".reveal").forEach(function (el) {
+        observador.observe(el);
+      });
+    } else {
+      document.querySelectorAll(".reveal").forEach(function (el) {
+        el.classList.add("revealed");
+      });
+    }
   })();
 </script>
 </body>
