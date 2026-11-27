@@ -1,11 +1,11 @@
 /*
  * ARQUIVO: api/enviar-notificacao.js  -  Função serverless do Vercel
- * Dispara notificações push para todas as inscrições registradas.
+ * Dispara notificações push para todas as inscrições (compartilhadas via Neon com /api/notificacao).
  * Chamado pelo Vercel Cron (vercel.json) nos horários agendados.
- * Totalmente autônomo: não importa módulos externos que possam quebrar o module load.
+ * web-push importado apenas dentro do handler (lazy load) — nada quebra o module load.
  */
 
-let inscricoesMemoria = [];
+const db = require("../lib/db");
 
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
@@ -58,12 +58,14 @@ async function handler(req, res) {
 
   const msg = mensagens[tipo] || mensagens.lista;
 
+  const inscricoes = await db.listarInscricoes();
+
   let enviados = 0;
   let falhas = 0;
 
-  for (const inscricao of inscricoesMemoria) {
+  for (const inscricao of inscricoes) {
     try {
-      const webpush = require("web-push");
+      const webpush = require("web-push"); // lazy load: só aqui, dentro do handler
       webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
       await webpush.sendNotification(
@@ -85,6 +87,6 @@ async function handler(req, res) {
     tipo,
     enviados,
     falhas,
-    total: inscricoesMemoria.length,
+    total: inscricoes.length,
   });
 }
