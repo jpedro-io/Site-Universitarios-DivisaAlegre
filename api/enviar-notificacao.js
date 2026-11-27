@@ -5,9 +5,9 @@
  */
 
 const { WebPush } = require("web-push");
-const { getPool } = require("../lib/db");
+const { getPool, bancoDisponivel, pgErro } = require("../lib/db");
 
-let inscricoesCache = []; // fallback se o banco falhar
+let inscricoesMemoria = []; // fallback se o banco não estiver disponível
 
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
@@ -56,30 +56,8 @@ module.exports = async (req, res) => {
 
   const msg = mensagens[tipo] || mensagens.lista;
 
-  const pool = getPool();
-
-  // Carrega as inscrições do Neon (com fallback em memória se o banco falhar)
-  let inscricoes = [];
-  try {
-    const cliente = await pool.connect();
-    try {
-      const r = await cliente.query(
-        "SELECT endpoint, tipo, keys_json FROM inscricoes"
-      );
-      inscricoes = r.rows.map((row) => ({
-        endpoint: row.endpoint,
-        keys: row.keys_json || {},
-      }));
-    } finally {
-      cliente.release();
-    }
-  } catch (dbErr) {
-    console.warn("[db] falhou ao ler inscrições, usando cache:", dbErr.message);
-    inscricoes = inscricoesCache.map((i) => ({
-      endpoint: i.endpoint,
-      keys: i.keys || {},
-    }));
-  }
+  // Carrega as inscrições (banco Neon com fallback em memória)
+  const inscricoes = await carregarInscrições();
 
   let enviados = 0;
   let falhas = 0;
@@ -103,31 +81,16 @@ module.exports = async (req, res) => {
     }
   }
 
-  // Persiste as inscrições válidas de volta (remove as que falharam)
-  try {
-    const cliente = await pool.connect();
+  // Atualiza a fonte de dados com apenas as inscrições válidas
+  if (bancoDisponivel()) {
     try {
-      if (inscricoes.length > 0 && falhas > 0) {
-        const endpointsValidos = validos.map((v) => v.endpoint);
-        for (const endpoint of endpointsValidos) {
-          await cliente.query(
-            "DELETE FROM inscricoes WHERE endpoint = $1",
-            [endpoint]
-          );
-        }
-        for (const inscricao of validos) {
-          await cliente.query(
-            "INSERT INTO inscricoes (endpoint, tipo, keys_json) VALUES ($1, $2, $3) ON CONFLICT (endpoint) DO NOTHING",
-            [inscricao.endpoint, tipo, JSON.stringify(inscricao.keys)]
-          );
-        }
-      }
-    } finally {
-      cliente.release();
+      await sincronizarBanco(validos);
+    } catch (dbErr) {
+      console.warn("[db] falhou ao sincronizar:", dbErr.message);
+      inscricoesMemoria = validos;
     }
-  } catch (dbErr) {
-    console.warn("[db] falhou ao limpar inscrições:", dbErr.message);
-    inscricoesCache = validos;
+  } else {
+    inscricoesMemoria = validos;
   }
 
   return res.status(200).json({
@@ -138,3 +101,60 @@ module.exports = async (req, res) => {
     total: inscricoes.length,
   });
 };
+
+/* ---------------- Helpers ---------------- */
+
+async function carregarInscrições() {
+  if (bancoDisponivel()) {
+    try {
+      const cliente = await getPool().connect();
+      try {
+        const r = await cliente.query(
+          "SELECT endpoint, tipo, keys_json FROM inscricoes"
+        );
+        return r.rows.map((row) => ({
+          endpoint: row.endpoint,
+          keys: row.keys_json || {},
+        }));
+      } finally {
+        cliente.release();
+      }
+    } catch (dbErr) {
+      console.warn("[db] falhou ao ler, usando memória:", dbErr.message);
+    }
+  } else {
+    console.warn("[db] banco indisponível (" + (pgErro || "sem DATABASE_URL") + "), usando memória");
+  }
+
+  return inscricoesMemoria.map((i) => ({
+    endpoint: i.endpoint,
+    keys: i.keys || {},
+  }));
+}
+
+async function sincronizarBanco(validos) {
+  const cliente = await getPool().connect();
+  try {
+    // Remove inscrições que falharam (não estão mais em validos)
+    const endpointsValidos = validos.map((v) => v.endpoint);
+    if (endpointsValidos.length > 0) {
+      const placeholders = endpointsValidos.map((_, i) => `$${i + 1}`).join(",");
+      await cliente.query(
+        `DELETE FROM inscricoes WHERE endpoint NOT IN (${placeholders})`,
+        endpointsValidos
+      );
+    } else {
+      await cliente.query("DELETE FROM inscricoes");
+    }
+
+    // (Re)inscreve as válidas
+    for (const inscricao of validos) {
+      await cliente.query(
+        "INSERT INTO inscricoes (endpoint, tipo, keys_json) VALUES ($1, $2, $3) ON CONFLICT (endpoint) DO NOTHING",
+        [inscricao.endpoint, "geral", JSON.stringify(inscricao.keys)]
+      );
+    }
+  } finally {
+    cliente.release();
+  }
+}

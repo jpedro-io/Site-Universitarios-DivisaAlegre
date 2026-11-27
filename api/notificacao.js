@@ -8,9 +8,9 @@
  */
 
 const { WebPush } = require("web-push");
-const { getPool } = require("../lib/db");
+const { getPool, bancoDisponivel, pgErro } = require("../lib/db");
 
-let inscricoesCache = []; // fallback se o banco falhar
+let inscricoesMemoria = []; // fallback se o banco não estiver disponível
 
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
@@ -35,8 +35,6 @@ module.exports = async (req, res) => {
     return res.status(200).json({ publicKey: VAPID_PUBLIC_KEY });
   }
 
-  const pool = getPool();
-
   if (req.method === "POST") {
     try {
       const inscricao = req.body;
@@ -48,52 +46,12 @@ module.exports = async (req, res) => {
       const tipo = inscricao.tipo || "geral";
       const keys_json = inscricao.keys || {};
 
-      try {
-        const cliente = await pool.connect();
-        try {
-          const existe = await cliente.query(
-            "SELECT 1 FROM inscricoes WHERE endpoint = $1",
-            [endpoint]
-          );
-          if (existe.rowCount > 0) {
-            await cliente.query(
-              "UPDATE inscricoes SET tipo = $2, keys_json = $3 WHERE endpoint = $1",
-              [endpoint, tipo, JSON.stringify(keys_json)]
-            );
-          } else {
-            await cliente.query(
-              "INSERT INTO inscricoes (endpoint, tipo, keys_json) VALUES ($1, $2, $3)",
-              [endpoint, tipo, JSON.stringify(keys_json)]
-            );
-          }
-        } finally {
-          cliente.release();
-        }
-      } catch (dbErr) {
-        console.warn("[db] falhou ao gravar, usando cache em memória:", dbErr.message);
-        const jaExiste = inscricoesCache.some((i) => i.endpoint === endpoint);
-        if (!jaExiste) {
-          inscricoesCache.push({ ...inscricao, tipo });
-        }
-      }
-
-      // Retorna total (banco ou cache)
-      let total;
-      try {
-        const cliente = await pool.connect();
-        try {
-          const r = await cliente.query("SELECT COUNT(*) AS total FROM inscricoes");
-          total = Number(r.rows[0].total);
-        } finally {
-          cliente.release();
-        }
-      } catch (e) {
-        total = inscricoesCache.length;
-      }
+      const total = await gravarInscrição(endpoint, tipo, keys_json);
 
       return res.status(201).json({ ok: true, total });
     } catch (e) {
-      return res.status(500).json({ ok: false, erro: e.message });
+      console.error("[notificacao] erro:", e.message);
+      return res.status(500).json({ ok: false, erro: "Erro ao registrar inscrição." });
     }
   }
 
@@ -104,36 +62,84 @@ module.exports = async (req, res) => {
         return res.status(400).json({ ok: false, erro: "Endpoint não informado." });
       }
 
-      try {
-        const cliente = await pool.connect();
-        try {
-          const r = await cliente.query(
-            "DELETE FROM inscricoes WHERE endpoint = $1",
-            [endpoint]
-          );
-          inscricoesCache = inscricoesCache.filter((i) => i.endpoint !== endpoint);
-          return res.status(200).json({
-            ok: true,
-            removidos: r.rowCount,
-            total: inscricoesCache.length,
-          });
-        } finally {
-          cliente.release();
-        }
-      } catch (dbErr) {
-        console.warn("[db] falhou ao deletar, usando cache em memória:", dbErr.message);
-        const antes = inscricoesCache.length;
-        inscricoesCache = inscricoesCache.filter((i) => i.endpoint !== endpoint);
-        return res.status(200).json({
-          ok: true,
-          removidos: antes - inscricoesCache.length,
-          total: inscricoesCache.length,
-        });
-      }
+      const removidos = await removerInscrição(endpoint);
+
+      return res.status(200).json({
+        ok: true,
+        removidos,
+      });
     } catch (e) {
-      return res.status(500).json({ ok: false, erro: e.message });
+      console.error("[notificacao] erro ao deletar:", e.message);
+      return res.status(500).json({ ok: false, erro: "Erro ao cancelar inscrição." });
     }
   }
 
   return res.status(405).json({ ok: false, erro: "Método não permitido." });
 };
+
+/* ---------------- Helpers de banco / memória ---------------- */
+
+async function gravarInscrição(endpoint, tipo, keys_json) {
+  if (bancoDisponivel()) {
+    try {
+      const cliente = await getPool().connect();
+      try {
+        const existe = await cliente.query(
+          "SELECT 1 FROM inscricoes WHERE endpoint = $1",
+          [endpoint]
+        );
+        if (existe.rowCount > 0) {
+          await cliente.query(
+            "UPDATE inscricoes SET tipo = $2, keys_json = $3 WHERE endpoint = $1",
+            [endpoint, tipo, JSON.stringify(keys_json)]
+          );
+        } else {
+          await cliente.query(
+            "INSERT INTO inscricoes (endpoint, tipo, keys_json) VALUES ($1, $2, $3)",
+            [endpoint, tipo, JSON.stringify(keys_json)]
+          );
+        }
+
+        const r = await cliente.query("SELECT COUNT(*) AS total FROM inscricoes");
+        return Number(r.rows[0].total);
+      } finally {
+        cliente.release();
+      }
+    } catch (dbErr) {
+      console.warn("[db] falhou ao gravar, usando memória:", dbErr.message);
+    }
+  } else {
+    console.warn("[db] banco indisponível (" + (pgErro || "sem DATABASE_URL") + "), usando memória");
+  }
+
+  // Fallback em memória
+  const jaExiste = inscricoesMemoria.some((i) => i.endpoint === endpoint);
+  if (!jaExiste) {
+    inscricoesMemoria.push({ endpoint, tipo, keys: keys_json });
+  }
+  return inscricoesMemoria.length;
+}
+
+async function removerInscrição(endpoint) {
+  if (bancoDisponivel()) {
+    try {
+      const cliente = await getPool().connect();
+      try {
+        const r = await cliente.query(
+          "DELETE FROM inscricoes WHERE endpoint = $1",
+          [endpoint]
+        );
+        return r.rowCount;
+      } finally {
+        cliente.release();
+      }
+    } catch (dbErr) {
+      console.warn("[db] falhou ao deletar, usando memória:", dbErr.message);
+    }
+  }
+
+  // Fallback em memória
+  const antes = inscricoesMemoria.length;
+  inscricoesMemoria = inscricoesMemoria.filter((i) => i.endpoint !== endpoint);
+  return antes - inscricoesMemoria.length;
+}
