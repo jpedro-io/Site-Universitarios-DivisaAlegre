@@ -23,19 +23,8 @@ function lerRawBody(req) {
 }
 
 async function parseBody(req) {
-  // 1. O Vercel/@vercel-node costuma popular req.body quando Content-Type é application/json
-  if (req.body && typeof req.body === "object" && Object.keys(req.body).length > 0) {
-    return req.body;
-  }
-  // 2. Se vier como string já parseada pelo framework
-  if (req.body && typeof req.body === "string") {
-    try {
-      return JSON.parse(req.body);
-    } catch (e) {
-      return {};
-    }
-  }
-  // 3. Fallback: ler o raw body do stream do request
+  // Sempre ler o raw body do stream como fonte da verdade.
+  // O req.body do @vercel-node pode chegar truncado ou vazio.
   try {
     const cru = await lerRawBody(req);
     if (!cru || cru.trim().length === 0) return {};
