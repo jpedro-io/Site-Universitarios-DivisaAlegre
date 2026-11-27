@@ -1,6 +1,6 @@
 /*
  * ARQUIVO: api/notificacao.js  -  Função serverless do Vercel
- * Gerencia inscrições para notificações push (VAPID).
+ * Gerencia inscrições para notificações push (VAPID) usando Neon (PostgreSQL).
  *
  * GET  /api/notificacao   -> retorna a chave pública VAPID
  * POST /api/notificacao   -> registra uma inscrição (PushSubscription)
@@ -8,8 +8,9 @@
  */
 
 const { WebPush } = require("web-push");
+const { getPool } = require("../lib/db");
 
-let inscricoes = []; // em produção, use um banco (Vercel KV, Postgres, etc.)
+let inscricoesCache = []; // fallback se o banco falhar
 
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
@@ -22,7 +23,6 @@ const webpush = new WebPush({
 });
 
 module.exports = async (req, res) => {
-  // Permite CORS apenas do próprio domínio em produção
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -35,6 +35,8 @@ module.exports = async (req, res) => {
     return res.status(200).json({ publicKey: VAPID_PUBLIC_KEY });
   }
 
+  const pool = getPool();
+
   if (req.method === "POST") {
     try {
       const inscricao = req.body;
@@ -42,13 +44,54 @@ module.exports = async (req, res) => {
         return res.status(400).json({ ok: false, erro: "Inscrição inválida." });
       }
 
-      // Evita duplicatas
-      const jaExiste = inscricoes.some((i) => i.endpoint === inscricao.endpoint);
-      if (!jaExiste) {
-        inscricoes.push(inscricao);
+      const { endpoint } = inscricao;
+      const tipo = inscricao.tipo || "geral";
+      const keys_json = inscricao.keys || {};
+
+      try {
+        const cliente = await pool.connect();
+        try {
+          const existe = await cliente.query(
+            "SELECT 1 FROM inscricoes WHERE endpoint = $1",
+            [endpoint]
+          );
+          if (existe.rowCount > 0) {
+            await cliente.query(
+              "UPDATE inscricoes SET tipo = $2, keys_json = $3 WHERE endpoint = $1",
+              [endpoint, tipo, JSON.stringify(keys_json)]
+            );
+          } else {
+            await cliente.query(
+              "INSERT INTO inscricoes (endpoint, tipo, keys_json) VALUES ($1, $2, $3)",
+              [endpoint, tipo, JSON.stringify(keys_json)]
+            );
+          }
+        } finally {
+          cliente.release();
+        }
+      } catch (dbErr) {
+        console.warn("[db] falhou ao gravar, usando cache em memória:", dbErr.message);
+        const jaExiste = inscricoesCache.some((i) => i.endpoint === endpoint);
+        if (!jaExiste) {
+          inscricoesCache.push({ ...inscricao, tipo });
+        }
       }
 
-      return res.status(201).json({ ok: true, total: inscricoes.length });
+      // Retorna total (banco ou cache)
+      let total;
+      try {
+        const cliente = await pool.connect();
+        try {
+          const r = await cliente.query("SELECT COUNT(*) AS total FROM inscricoes");
+          total = Number(r.rows[0].total);
+        } finally {
+          cliente.release();
+        }
+      } catch (e) {
+        total = inscricoesCache.length;
+      }
+
+      return res.status(201).json({ ok: true, total });
     } catch (e) {
       return res.status(500).json({ ok: false, erro: e.message });
     }
@@ -60,9 +103,33 @@ module.exports = async (req, res) => {
       if (!endpoint) {
         return res.status(400).json({ ok: false, erro: "Endpoint não informado." });
       }
-      const antes = inscricoes.length;
-      inscricoes = inscricoes.filter((i) => i.endpoint !== endpoint);
-      return res.status(200).json({ ok: true, removidos: antes - inscricoes.length, total: inscricoes.length });
+
+      try {
+        const cliente = await pool.connect();
+        try {
+          const r = await cliente.query(
+            "DELETE FROM inscricoes WHERE endpoint = $1",
+            [endpoint]
+          );
+          inscricoesCache = inscricoesCache.filter((i) => i.endpoint !== endpoint);
+          return res.status(200).json({
+            ok: true,
+            removidos: r.rowCount,
+            total: inscricoesCache.length,
+          });
+        } finally {
+          cliente.release();
+        }
+      } catch (dbErr) {
+        console.warn("[db] falhou ao deletar, usando cache em memória:", dbErr.message);
+        const antes = inscricoesCache.length;
+        inscricoesCache = inscricoesCache.filter((i) => i.endpoint !== endpoint);
+        return res.status(200).json({
+          ok: true,
+          removidos: antes - inscricoesCache.length,
+          total: inscricoesCache.length,
+        });
+      }
     } catch (e) {
       return res.status(500).json({ ok: false, erro: e.message });
     }
