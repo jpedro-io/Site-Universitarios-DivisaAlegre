@@ -15,17 +15,21 @@ let debugInfo = {
   moduloCarregado: true,
   webPushOk: !!webpush,
   pgNaoUsado: true,
+  vapidConfigurado: false,
+  erroVapid: null,
 };
 
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
 const VAPID_EMAIL = process.env.VAPID_EMAIL || "mailto:contato@example.com";
 
-webpush.setVapidDetails(
-  VAPID_EMAIL,
-  VAPID_PUBLIC_KEY,
-  VAPID_PRIVATE_KEY
-);
+// Protege o setVapidDetails para nao derrubar o carregamento do modulo
+try {
+  webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+  debugInfo.vapidConfigurado = !!VAPID_PUBLIC_KEY && !!VAPID_PRIVATE_KEY;
+} catch (e) {
+  debugInfo.erroVapid = e.message;
+}
 
 module.exports = async (req, res) => {
   try {
