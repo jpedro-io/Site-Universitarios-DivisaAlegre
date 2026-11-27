@@ -15,23 +15,36 @@ const VAPID_EMAIL = process.env.VAPID_EMAIL || "mailto:contato@example.com";
 
 function lerRawBody(req) {
   return new Promise((resolve, reject) => {
-    const pedaços = [];
-    req.on("data", (pedaço) => pedaços.push(pedaço));
-    req.on("end", () => resolve(Buffer.concat(pedaços).toString("utf8")));
+    const pedacos = [];
+    req.on("data", (pedaco) => pedacos.push(pedaco));
+    req.on("end", () => resolve(Buffer.concat(pedacos).toString("utf8")));
     req.on("error", reject);
   });
 }
 
 async function parseBody(req) {
-  // Sempre ler o raw body do stream como fonte da verdade.
-  // O req.body do @vercel-node pode chegar truncado ou vazio.
+  // 1. Ler o raw body do stream (fonte da verdade)
   try {
     const cru = await lerRawBody(req);
-    if (!cru || cru.trim().length === 0) return {};
-    return JSON.parse(cru);
+    if (cru && cru.trim().length > 0) {
+      return JSON.parse(cru);
+    }
   } catch (e) {
-    return {};
+    // ignora, tenta abaixo
   }
+  // 2. Fallback: req.body preenchido pelo @vercel-node
+  if (req.body && typeof req.body === "object") {
+    return req.body;
+  }
+  // 3. req.body como string
+  if (req.body && typeof req.body === "string") {
+    try {
+      return JSON.parse(req.body);
+    } catch (e) {
+      return {};
+    }
+  }
+  return {};
 }
 
 module.exports = async (req, res) => {
@@ -61,11 +74,15 @@ async function handler(req, res) {
   if (req.method === "POST") {
     try {
       const inscricao = await parseBody(req);
+
       if (!inscricao || !inscricao.endpoint) {
         return res.status(400).json({
           ok: false,
           erro: "Inscrição inválida. endpoint não recebido.",
-          debug: { bodyRecebido: typeof inscricao === "object" ? Object.keys(inscricao) : typeof inscricao },
+          debug: {
+            bodyRecebido: inscricao && typeof inscricao === "object" ? Object.keys(inscricao) : typeof inscricao,
+            corpoBruto: inscricao && typeof inscricao === "object" ? JSON.stringify(inscricao).slice(0, 500) : String(inscricao),
+          },
         });
       }
 
