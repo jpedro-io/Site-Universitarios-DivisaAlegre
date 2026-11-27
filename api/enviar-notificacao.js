@@ -4,7 +4,7 @@
  * Chamado pelo Vercel Cron (vercel.json) nos horários agendados.
  */
 
-const { WebPush } = require("web-push");
+const webpush = require("web-push");
 const { getPool, bancoDisponivel, pgErro } = require("../lib/db");
 
 let inscricoesMemoria = []; // fallback se o banco não estiver disponível
@@ -13,11 +13,11 @@ const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
 const VAPID_EMAIL = process.env.VAPID_EMAIL || "mailto:contato@example.com";
 
-const webpush = new WebPush({
-  publicKey: VAPID_PUBLIC_KEY,
-  privateKey: VAPID_PRIVATE_KEY,
-  email: VAPID_EMAIL,
-});
+webpush.setVapidDetails(
+  VAPID_EMAIL,
+  VAPID_PUBLIC_KEY,
+  VAPID_PRIVATE_KEY
+);
 
 module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
