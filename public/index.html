@@ -1110,10 +1110,18 @@
           applicationServerKey: aplicacaoServidor,
         });
 
+        // PushSubscription.endpoint é getter no protótipo: spread (...) não o copia.
+        // Copiamos explicitamente os campos que o servidor precisa.
+        const corpoInscricao = {
+          endpoint: inscricao.endpoint,
+          keys: inscricao.keys || {},
+          tipo: tipo || "geral",
+        };
+
         await fetch("/api/notificacao", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...inscricao, tipo: tipo || "geral" }),
+          body: JSON.stringify(corpoInscricao),
         });
       } catch (e) {
         console.warn("[push] falhou ao inscrever:", e);
