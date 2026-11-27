@@ -1,16 +1,37 @@
 /*
  * ARQUIVO: api/notificacao.js  -  Função serverless do Vercel
- * Gerencia inscrições para notificações push (VAPID) usando Neon (PostgreSQL).
- *
- * GET  /api/notificacao   -> retorna a chave pública VAPID (nunca quebra)
- * POST /api/notificacao   -> registra uma inscrição (PushSubscription)
- * DELETE /api/notificacao -> cancela uma inscrição (envia { endpoint, tipo })
+ * Totalmente autônomo e defensivo: nunca lança exceção não capturada.
+ * GET  /api/notificacao   -> retorna a chave pública VAPID
+ * GET  /api/notificacao?debug=1 -> diagnostico do Neon
+ * POST /api/notificacao   -> registra inscrição (PushSubscription)
+ * DELETE /api/notificacao -> cancela inscrição
  */
 
 const { WebPush } = require("web-push");
-const { getPool, bancoDisponivel, pgErro } = require("../lib/db");
 
 let inscricoesMemoria = [];
+let pgModulo = null;
+let pgErro = null;
+try {
+  pgModulo = require("pg");
+} catch (e) {
+  pgErro = e.message;
+}
+
+let pool = null;
+function getPool() {
+  if (!pgModulo) throw new Error("pg nao instalado: " + (pgErro || "desconhecido"));
+  if (!pool) {
+    pool = new pgModulo.Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+    });
+  }
+  return pool;
+}
+function bancoDisponivel() {
+  return !!pgModulo && !!process.env.DATABASE_URL;
+}
 
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
@@ -23,6 +44,17 @@ const webpush = new WebPush({
 });
 
 module.exports = async (req, res) => {
+  try {
+    return await handler(req, res);
+  } catch (e) {
+    console.error("[notificacao] erro nao capturado:", e.message);
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Content-Type", "application/json");
+    return res.status(500).json({ ok: false, erro: "Erro interno." });
+  }
+};
+
+async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -31,10 +63,10 @@ module.exports = async (req, res) => {
     return res.status(204).end();
   }
 
-  // GET sem parametro: retorna apenas a chave pública VAPID (nunca quebra)
-  // GET ?debug=1: diagnostico da conexao com o Neon
+  const debug = req.query && req.query.debug === "1";
+
   if (req.method === "GET") {
-    if (req.query && req.query.debug === "1") {
+    if (debug) {
       const info = {
         bancoDisponivel: bancoDisponivel(),
         pgErro: pgErro || null,
@@ -66,7 +98,6 @@ module.exports = async (req, res) => {
       if (!inscricao || !inscricao.endpoint) {
         return res.status(400).json({ ok: false, erro: "Inscrição inválida." });
       }
-
       const total = await gravarInscrição(inscricao.endpoint, inscricao.tipo || "geral", inscricao.keys || {});
       return res.status(201).json({ ok: true, total });
     } catch (e) {
@@ -81,7 +112,6 @@ module.exports = async (req, res) => {
       if (!endpoint) {
         return res.status(400).json({ ok: false, erro: "Endpoint não informado." });
       }
-
       const removidos = await removerInscrição(endpoint);
       return res.status(200).json({ ok: true, removidos });
     } catch (e) {
@@ -91,7 +121,7 @@ module.exports = async (req, res) => {
   }
 
   return res.status(405).json({ ok: false, erro: "Método não permitido." });
-};
+}
 
 async function gravarInscrição(endpoint, tipo, keys_json) {
   if (bancoDisponivel()) {
