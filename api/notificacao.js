@@ -13,6 +13,38 @@ const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
 const VAPID_EMAIL = process.env.VAPID_EMAIL || "mailto:contato@example.com";
 
+function lerRawBody(req) {
+  return new Promise((resolve, reject) => {
+    const pedaços = [];
+    req.on("data", (pedaço) => pedaços.push(pedaço));
+    req.on("end", () => resolve(Buffer.concat(pedaços).toString("utf8")));
+    req.on("error", reject);
+  });
+}
+
+async function parseBody(req) {
+  // 1. O Vercel/@vercel-node costuma popular req.body quando Content-Type é application/json
+  if (req.body && typeof req.body === "object" && Object.keys(req.body).length > 0) {
+    return req.body;
+  }
+  // 2. Se vier como string já parseada pelo framework
+  if (req.body && typeof req.body === "string") {
+    try {
+      return JSON.parse(req.body);
+    } catch (e) {
+      return {};
+    }
+  }
+  // 3. Fallback: ler o raw body do stream do request
+  try {
+    const cru = await lerRawBody(req);
+    if (!cru || cru.trim().length === 0) return {};
+    return JSON.parse(cru);
+  } catch (e) {
+    return {};
+  }
+}
+
 module.exports = async (req, res) => {
   try {
     return await handler(req, res);
@@ -39,9 +71,13 @@ async function handler(req, res) {
 
   if (req.method === "POST") {
     try {
-      const inscricao = req.body;
+      const inscricao = await parseBody(req);
       if (!inscricao || !inscricao.endpoint) {
-        return res.status(400).json({ ok: false, erro: "Inscrição inválida." });
+        return res.status(400).json({
+          ok: false,
+          erro: "Inscrição inválida. endpoint não recebido.",
+          debug: { bodyRecebido: typeof inscricao === "object" ? Object.keys(inscricao) : typeof inscricao },
+        });
       }
 
       const jaExiste = inscricoesMemoria.some((i) => i.endpoint === inscricao.endpoint);
@@ -62,7 +98,8 @@ async function handler(req, res) {
 
   if (req.method === "DELETE") {
     try {
-      const { endpoint } = req.body || {};
+      const corpo = await parseBody(req);
+      const { endpoint } = corpo || {};
       if (!endpoint) {
         return res.status(400).json({ ok: false, erro: "Endpoint não informado." });
       }
