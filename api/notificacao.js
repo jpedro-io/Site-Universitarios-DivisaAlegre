@@ -31,8 +31,32 @@ module.exports = async (req, res) => {
     return res.status(204).end();
   }
 
-  // GET nunca quebra — apenas retorna a chave pública VAPID
+  // GET sem parametro: retorna apenas a chave pública VAPID (nunca quebra)
+  // GET ?debug=1: diagnostico da conexao com o Neon
   if (req.method === "GET") {
+    if (req.query && req.query.debug === "1") {
+      const info = {
+        bancoDisponivel: bancoDisponivel(),
+        pgErro: pgErro || null,
+        temDatabaseUrl: !!process.env.DATABASE_URL,
+      };
+      if (bancoDisponivel()) {
+        try {
+          const cliente = await getPool().connect();
+          try {
+            const r = await cliente.query("SELECT COUNT(*) AS total FROM inscricoes");
+            info.conectou = true;
+            info.totalInscricoes = Number(r.rows[0].total);
+          } finally {
+            cliente.release();
+          }
+        } catch (e) {
+          info.conectou = false;
+          info.erroConexao = e.message;
+        }
+      }
+      return res.status(200).json(info);
+    }
     return res.status(200).json({ publicKey: VAPID_PUBLIC_KEY });
   }
 
