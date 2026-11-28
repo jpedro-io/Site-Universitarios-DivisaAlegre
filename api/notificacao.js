@@ -76,14 +76,7 @@ async function handler(req, res) {
       const inscricao = await parseBody(req);
 
       if (!inscricao || !inscricao.endpoint) {
-        return res.status(400).json({
-          ok: false,
-          erro: "Inscrição inválida. endpoint não recebido.",
-          debug: {
-            bodyRecebido: inscricao && typeof inscricao === "object" ? Object.keys(inscricao) : typeof inscricao,
-            corpoBruto: inscricao && typeof inscricao === "object" ? JSON.stringify(inscricao).slice(0, 500) : String(inscricao),
-          },
-        });
+        return res.status(400).json({ ok: false, erro: "Inscrição inválida." });
       }
 
       const gravou = await db.inserirInscricao(
