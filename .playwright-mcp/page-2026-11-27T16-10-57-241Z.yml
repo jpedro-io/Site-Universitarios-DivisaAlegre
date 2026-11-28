@@ -1,0 +1,47 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content":
+    - /url: "#geist-skip-nav"
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - link "Vercel logo":
+        - /url: /home
+        - button [ref=e5] [cursor=pointer]:
+          - img "Vercel Logo" [ref=e6]
+      - navigation [ref=e8]:
+        - navigation [ref=e9]:
+          - link [ref=e10] [cursor=pointer]:
+            - /url: /signup?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fsite-universitarios-qkzah4wbo-jpedro-ios-projects.vercel.app%252Fapi%252Fnotificacao%253Fdebug%253D1%26nonce%3Da58bdac2dc8a063c3233368324eef34a3bb52cd8ecab8ab9c0e66935882d13cd
+            - paragraph [ref=e12]: Sign Up
+    - main [ref=e13]:
+      - generic [ref=e15]:
+        - heading "Log in to Vercel" [level=1] [ref=e18]
+        - generic [ref=e19]:
+          - generic [ref=e20]:
+            - textbox "Email Address" [ref=e23]
+            - button "Continue with Email" [ref=e26] [cursor=pointer]
+          - generic [ref=e29]:
+            - button "Continue with Google" [ref=e30] [cursor=pointer]:
+              - generic [ref=e34]:
+                - generic [ref=e35]: Continue with
+                - text: Google
+            - button "Continue with GitHub" [ref=e36] [cursor=pointer]:
+              - generic [ref=e40]:
+                - generic [ref=e41]: Continue with
+                - text: GitHub
+            - button "Continue with ChatGPT" [ref=e42] [cursor=pointer]:
+              - generic [ref=e46]:
+                - generic [ref=e47]: Continue with
+                - text: ChatGPT
+            - button "Continue with SAML SSO" [ref=e49] [cursor=pointer]
+            - button "Continue with Passkey" [ref=e54] [cursor=pointer]
+            - button "Show other options" [ref=e59] [cursor=pointer]
+        - paragraph [ref=e62]:
+          - text: Don't have an account?
+          - link "Sign Up" [ref=e63] [cursor=pointer]:
+            - /url: /signup?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fsite-universitarios-qkzah4wbo-jpedro-ios-projects.vercel.app%252Fapi%252Fnotificacao%253Fdebug%253D1%26nonce%3Da58bdac2dc8a063c3233368324eef34a3bb52cd8ecab8ab9c0e66935882d13cd
+      - generic [ref=e66]:
+        - link "Terms" [ref=e67] [cursor=pointer]:
+          - /url: /legal/terms
+        - link "Privacy Policy" [ref=e68] [cursor=pointer]:
+          - /url: /legal/privacy-notice
+  - alert [ref=e69]

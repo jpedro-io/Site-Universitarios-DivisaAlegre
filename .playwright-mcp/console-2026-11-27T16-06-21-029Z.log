@@ -1,0 +1,35 @@
+[    1915ms] [WARNING] Error with Feature-Policy header: Some features are specified in both Feature-Policy and Permissions-Policy header: camera. Values defined in Permissions-Policy header will be used. @ :1
+[    2633ms] [LOG] %c
+▲
+
+    ________   _ __ _          ____           __
+   /  _/ __/  (_) /( )_____   / __/___ ______/ /_
+   / // /_   / / __/// ___/  / /_/ __ `/ ___/ __/
+ _/ // __/  / / /_  (__  )  / __/ /_/ (__  ) /_
+/___/_/    /_/\__/ /____/  /_/  \__,_/____/\__/
+    _ __ _                         _    __                    __
+   (_) /( )_____   ____  ____     | |  / /__  _____________  / /
+  / / __/// ___/  / __ \/ __ \    | | / / _ \/ ___/ ___/ _ \/ /
+ / / /_  (__  )  / /_/ / / / /    | |/ /  __/ /  / /__/  __/ /
+/_/\__/ /____/   \____/_/ /_/     |___/\___/_/   \___/\___/_/
+  
+
+Hello!
+
+- Open Source https://vercel.com/oss
+- Careers https://vercel.com/careers
+- Status https://www.vercel-status.com
+
+ font-family: "Geist Mono", monospace; white-space: pre; line-height: 1; @ https://vercel.com/_next/static/immutable/chunks/40hygh93tkg3n.js:79
+[    3156ms] [WARNING] [GSI_LOGGER]: Your client application uses one of the Google One Tap prompt UI status methods that may stop functioning when FedCM becomes mandatory. Refer to the migration guide to update your code accordingly and opt-in to FedCM to test your changes. Learn more: https://developers.google.com/identity/gsi/web/guides/fedcm-migration?s=dc#display_moment and https://developers.google.com/identity/gsi/web/guides/fedcm-migration?s=dc#skipped_moment @ https://accounts.google.com/gsi/client:89
+[    3241ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://vercel.com/api/jwt:1
+[    3271ms] [WARNING] Deprecated API for given entry type. @ https://vercel.com/_next/static/immutable/chunks/20gen2cw3kwzl.js:19
+[    3279ms] [ERROR] Not signed in with the identity provider. @ https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fsite-universitarios-qkzah4wbo-jpedro-ios-projects.vercel.app%252Fapi%252Fnotificacao%253Fdebug%253D1%26nonce%3Da58bdac2dc8a063c3233368324eef34a3bb52cd8ecab8ab9c0e66935882d13cd:1
+[    4937ms] [ERROR] [GSI_LOGGER]: FedCM get() rejects with NetworkError: Error retrieving a token. @ https://vercel.com/_next/static/immutable/chunks/1u00dua8d3ath.js:9
+[    4975ms] [ERROR] Failed to load resource: the server responded with a status of 429 () @ https://o205439.ingest.sentry.io/api/1323670/envelope/?sentry_key=d00780d432ac4ccf882f60dd02062e14&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.111.0:1
+[    8091ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ https://accounts.google.com/v3/signin/identifier?opparams=%253F&dsh=S-1490979258%3A1795795587798553&client_id=258013614557-nema0dumfbottebi6to7aqi85qot9pvs.apps.googleusercontent.com&o2v=2&redirect_uri=https%3A%2F%2Fvercel.com%2Fapi%2Fregistration%2Fgoogle%2Fcallback&response_type=code&scope=openid+profile+email&service=lso&state=63770e364cb0e4e119979a38557e4505953725cd260deb9f870b74d5f5912f68e417b7a39ad710a028eee816123c326d8a1f248a0721443595c6de2c2035a66d0f87ce5405488d2ba4ea90a1847b8cbd4366716a93685d60a282bb56c7e7984b4effded0ad22a21a479efee3d85a1e3d204b4f20bf6aa616e8f12444e6a0b0d7cab7c022a1bfc93b9e9df688d073966bc0505c5ea9ea4728c88aea20452ecab5889b27fd426088571d6f1d5729650f1d488fba8439973aabe1cb6c8471381251f51a492f06005d580b187c8a5757343e207b30cc69fc19fcde4d6cade21958e9d43dab79c18fcd01540083062f0452afae17872a9f758c4fc908d51e338cdeb92633ae0e9e0b603b5182184af61aac02bff1fad357e60a47a959d6ef12b51ebb09ece6f30fb018e825841a663c5c78bce9e9e0aa7da75dfbe13c2ed4836b50e1c59ce5c96f81dddc44294e5e2bb45d4cde1f1bebd7fcd56273b5e38d3bd25993f02c8ac39d37cc4de6e030b1dcd15a6f07b9012c27b13a6d963653f2903e1e9fcb56449150814f045906ad6a36fce756aa3d55a08d849ca56b6b474dc58bc213b86c1f2dc66163655d24baa417187b9ea27ac36c504cc18ebbc41f65a5acdcc84c457644da3eb1d900f52046c7206934a90c9f46d154dec5ac8c6b&flowName=GeneralOAuthFlow&continue=https%3A%2F%2Faccounts.google.com%2Fsignin%2Foauth%2Fv3%2Fconsent%3Fauthuser%3Dunknown%26part%3DAJi8hAM-IOjwWFnxBL8Fp-m-mOooC_R2ybkGqmqktmAreLArPm17DfrLtfDUa79_iZHR-EmR9KJt-AfuG8VPLGY9KSkzuDKY3v8j6ALIFgbxqJON18TK5Kp_TzBaq21e8ezy8GQlznw5WXuFds_KnfEg7yh94s9tj3WsTAw3V9WJMBUdgX5Dg6jNGwXO1IU-Q4ZSW-iNBcnoY2BuAjTFM3Y0cuQPwxPqudPOFRY_II6Go2bShicW6PmsswUpr-haJyoIcqex8Fg_kOcHE4Qt-Uuz2mt-O6swdTXi7cXDNN3sXvSHYzColCGO19Ev31e3zXNfmIoCn2Jj9szOzNajOvu8piYUotrKNB6OXuGqUZczK7vT12kb2ql3RYmQneVG75AqIeWpSZAKrf5ts4bRa_VpIxpVKH8sJmoIaevgGrXrB_tNoaDq9f3BQYIqskN2BGnVRqqNg6kC-n37swnQU24Qg1CDcL58Ew%26flowName%3DGeneralOAuthFlow%26as%3DS-1490979258%253A1795795587798553%26client_id%3D258013614557-nema0dumfbottebi6to7aqi85qot9pvs.apps.googleusercontent.com%26requestPath%3D%252Fsignin%252Foauth%252Fv3%252Fconsent%23&app_domain=https%3A%2F%2Fvercel.com&rart=ANgoxceaax5lZXYJ3fSqANs3KobIi6DYXV_RTQMjIWH6PuBoXA2OJDIjjmttJ9QgPhGIPnC5pAUpVGe0QntoNdeV8v9ICyZCGeIr-icAYW1OzV_Y5AJG8zQ:1
+[    8101ms] [LOG] %c%s color: red; background: yellow; font-size: 24px; AVISO @ https://www.gstatic.com/_/mss/boq-identity/_/js/k=boq-identity.AccountsSignInUi.pt_BR.lRmoQ6sNgXM.es5.O/am=D_wIAQAAAAAc4UkAACACgOI3AIAAwRpwTwtgAoQMAAAAAAAAAABwFQCALAII/d=1/excm=_b,_tp,identifierview/ed=1/dg=0/wt=2/ujg=1/rs=AOaEmlHPevFVdr-p-hEdOEEvPsHfJQBk9w/dti=1/m=_b,_tp:618
+[    8101ms] [LOG] %c%s font-size: 18px; O uso deste console pode permitir que invasores falsifiquem sua identidade para roubar informações por meio de um ataque chamado Self-XSS.
+Não insira nem cole códigos que você não conheça. @ https://www.gstatic.com/_/mss/boq-identity/_/js/k=boq-identity.AccountsSignInUi.pt_BR.lRmoQ6sNgXM.es5.O/am=D_wIAQAAAAAc4UkAACACgOI3AIAAwRpwTwtgAoQMAAAAAAAAAABwFQCALAII/d=1/excm=_b,_tp,identifierview/ed=1/dg=0/wt=2/ujg=1/rs=AOaEmlHPevFVdr-p-hEdOEEvPsHfJQBk9w/dti=1/m=_b,_tp:618
+[    8728ms] [WARNING] The powerPreference option is currently ignored when calling requestAdapter() on Windows. See https://crbug.com/369219127 @ :1
+[    8730ms] [WARNING] The powerPreference option is currently ignored when calling requestAdapter() on Windows. See https://crbug.com/369219127 @ :1
